@@ -1,0 +1,202 @@
+<mxfile host="65bd71144e">
+    <diagram id="cf-live-arch" name="Internet Infrastructure">
+        <mxGraphModel dx="1365" dy="1498" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="g_audience" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#b0b7c3;strokeWidth=2;dashed=1;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="170" width="260" height="620" as="geometry"/>
+                </mxCell>
+                <mxCell id="g_cf" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#b0b7c3;strokeWidth=2;dashed=1;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="340" y="170" width="1210" height="620" as="geometry"/>
+                </mxCell>
+                <mxCell id="g_venue" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#b0b7c3;strokeWidth=2;dashed=1;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1590" y="230" width="260" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="g_meta" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cbd5e1;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="30" width="1810" height="85" as="geometry"/>
+                </mxCell>
+                <mxCell id="t_title" value="Internet Infrastructure Draft&lt;br/&gt;&lt;font style=&#39;font-size:14px;font-weight:normal;&#39;&gt;Cloudflare-based live streaming + moderated realtime comments&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=22;fontColor=#1f2937;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="40" width="900" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="t_meta" value="Scope: Internet-side architecture only | Audience-facing live page + comment moderation | Version: v1.0 | Date: 2026-04-03" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#4b5563;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="80" width="980" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="t_audience" value="Audience / Operators" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=22;fontColor=#1f2937;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="180" width="180" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="t_cf" value="Cloudflare Internet Layer" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=22;fontColor=#1f2937;" parent="1" vertex="1">
+                    <mxGeometry x="355" y="180" width="260" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="t_venue" value="Venue / Source" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=22;fontColor=#1f2937;" parent="1" vertex="1">
+                    <mxGeometry x="1605" y="240" width="170" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="viewer" value="Viewer Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e5e7eb;strokeColor=#9ca3af;strokeWidth=2;fontSize=14;fontColor=#111827;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="240" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="commenter" value="Comment UI&lt;br/&gt;&lt;font style=&#39;font-size:11px;&#39;&gt;embedded in live page&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e5e7eb;strokeColor=#9ca3af;strokeWidth=2;fontSize=14;fontColor=#111827;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="370" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="admin" value="Admin Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e5e7eb;strokeColor=#9ca3af;strokeWidth=2;fontSize=14;fontColor=#111827;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="640" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="dns" value="Public Internet / DNS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e5e7eb;strokeColor=#9ca3af;strokeWidth=2;fontSize=14;fontColor=#111827;" parent="1" vertex="1">
+                    <mxGeometry x="110" y="530" width="120" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="label_edge" value="Edge / Frontend" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#334155;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="210" width="160" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="label_media" value="Media Path" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#334155;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="210" width="120" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="label_state" value="State / Data" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#334155;" parent="1" vertex="1">
+                    <mxGeometry x="1120" y="210" width="150" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="pages" value="Cloudflare Pages&lt;br/&gt;&lt;font style=&#39;font-size:11px;&#39;&gt;live page + player embed + comment UI&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#60a5fa;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="230" width="230" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="stream" value="Cloudflare Stream Live" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ede9fe;strokeColor=#a78bfa;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="215" width="230" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="queue" value="Queues" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#4ade80;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="235" width="180" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="d1" value="D1&lt;br/&gt;&lt;font style=&#39;font-size:11px;&#39;&gt;comments / moderation state&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#fb923c;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="230" width="170" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="turnstile" value="Turnstile" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#f87171;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="390" width="230" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="workers" value="Workers API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#4ade80;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="375" width="230" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="do" value="Durable Object&lt;br/&gt;&lt;font style=&#39;font-size:11px;&#39;&gt;comment room state + broadcast&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#4ade80;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="370" width="230" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="r2" value="R2&lt;br/&gt;&lt;font style=&#39;font-size:11px;&#39;&gt;exports / logs / assets&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#fb923c;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="360" width="170" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="waf" value="WAF + Rate Limits&lt;br/&gt;&lt;font style=&#39;font-size:11px;&#39;&gt;comment API&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#f87171;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="510" width="230" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="closed_mode" value="Comment mode&lt;br/&gt;&lt;font style=&#39;font-size:11px;&#39;&gt;OPEN / SLOW / CLOSED&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#4ade80;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="540" width="230" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="access" value="Cloudflare Access&lt;br/&gt;&lt;font style=&#39;font-size:11px;&#39;&gt;admin only&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#f87171;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="640" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="admin_ui" value="Admin UI&lt;br/&gt;&lt;font style=&#39;font-size:11px;&#39;&gt;protected admin page&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#60a5fa;strokeWidth=2;fontSize=14;fontColor=#0f172a;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="640" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="atem" value="ATEM Mini Pro" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e5e7eb;strokeColor=#9ca3af;strokeWidth=2;fontSize=14;fontColor=#111827;" parent="1" vertex="1">
+                    <mxGeometry x="1630" y="280" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="uplink" value="Venue Internet Uplink" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e5e7eb;strokeColor=#9ca3af;strokeWidth=2;fontSize=14;fontColor=#111827;" parent="1" vertex="1">
+                    <mxGeometry x="1630" y="460" width="180" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="note1" value="Design notes:&lt;br/&gt;1) Keep video delivery and comment delivery as separate paths.&lt;br/&gt;2) Public comment APIs go through Turnstile + WAF + Workers + rate limiting.&lt;br/&gt;3) Admin actions are isolated behind Cloudflare Access + Admin UI.&lt;br/&gt;4) Archive recording is intentionally out of scope here." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fdba74;strokeWidth=1;fontSize=12;fontColor=#7c2d12;" parent="1" vertex="1">
+                    <mxGeometry x="1040" y="620" width="490" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend" value="Legend&lt;br/&gt;Blue: frontend requests&lt;br/&gt;Purple: media ingest / playback&lt;br/&gt;Green: app runtime / state flow&lt;br/&gt;Orange: storage / export&lt;br/&gt;Red dashed: security / auth / moderation control" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cbd5e1;strokeWidth=1;fontSize=12;fontColor=#111827;" parent="1" vertex="1">
+                    <mxGeometry x="1590" y="620" width="260" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#2563eb;fontSize=12;fontColor=#1d4ed8;exitX=1;exitY=0.5;entryX=0;entryY=0.5;entryPerimeter=0;" parent="1" source="viewer" target="pages" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="page load + SSE subscribe" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#2563eb;fontSize=12;fontColor=#1d4ed8;exitX=1;exitY=0.35;entryX=0;entryY=0.8;entryPerimeter=0;" parent="1" source="commenter" target="pages" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="admin login" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#2563eb;fontSize=12;fontColor=#1d4ed8;exitX=1;exitY=0.5;entryX=0;entryY=0.5;entryPerimeter=0;" parent="1" source="admin" target="access" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="protected admin page" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#dc2626;fontSize=12;fontColor=#991b1b;dashed=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;entryPerimeter=0;" parent="1" source="access" target="admin_ui" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" value="history / room state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#2563eb;fontSize=12;fontColor=#1d4ed8;dashed=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;entryPerimeter=0;" parent="1" source="pages" target="waf" edge="1">
+                    <mxGeometry x="-0.5789" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e6" value="comment submit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#dc2626;fontSize=12;fontColor=#991b1b;dashed=1;exitX=1;exitY=0.65;entryX=0;entryY=0.5;entryPerimeter=0;" parent="1" source="commenter" target="turnstile" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" value="comment submit + token" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#dc2626;fontSize=12;fontColor=#991b1b;dashed=1;exitX=1;exitY=0.5;entryX=0;entryY=0.45;entryPerimeter=0;" parent="1" source="turnstile" target="waf" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e8" value="validated API calls" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#16a34a;fontSize=12;fontColor=#166534;exitX=1;exitY=0.5;entryX=0;entryY=0.2;entryPerimeter=0;" parent="1" source="waf" target="workers" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e9" value="broadcast to room" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#16a34a;fontSize=12;fontColor=#166534;exitX=1;exitY=0.5;entryX=0;entryY=0.5;entryPerimeter=0;" parent="1" source="workers" target="do" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e10" value="persist / audit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#16a34a;fontSize=12;fontColor=#166534;exitX=1;exitY=0.2;entryX=0;entryY=0.5;entryPerimeter=0;" parent="1" source="workers" target="queue" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e11" value="SSE fan-out to clients" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#16a34a;fontSize=12;fontColor=#166534;exitX=0;exitY=0.7;entryX=1;entryY=0.55;entryPerimeter=0;" parent="1" source="do" target="pages" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1020" y="520"/>
+                            <mxPoint x="700" y="520"/>
+                            <mxPoint x="700" y="280"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e12" value="comment records" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#ea580c;fontSize=12;fontColor=#9a3412;exitX=1;exitY=0.5;entryX=0;entryY=0.5;entryPerimeter=0;" parent="1" source="queue" target="d1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e13" value="logs / exports" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#ea580c;fontSize=12;fontColor=#9a3412;exitX=1;exitY=0.85;entryX=0;entryY=0.5;entryPerimeter=0;" parent="1" source="queue" target="r2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e14" value="playback stream" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#7c3aed;fontSize=12;fontColor=#6d28d9;exitX=0;exitY=0.5;entryX=1;entryY=0.3;entryPerimeter=0;" parent="1" source="stream" target="pages" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e15" value="RTMPS live ingest" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#7c3aed;fontSize=12;fontColor=#6d28d9;exitX=0;exitY=0.35;entryX=1;entryY=0.5;entryPerimeter=0;" parent="1" source="uplink" target="stream" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1570" y="481"/>
+                            <mxPoint x="1570" y="190"/>
+                            <mxPoint x="1030" y="190"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e16" value="program output" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#7c3aed;fontSize=12;fontColor=#6d28d9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;entryPerimeter=0;" parent="1" source="atem" target="uplink" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e17" value="moderation state lookup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#ea580c;fontSize=12;fontColor=#9a3412;dashed=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" parent="1" source="workers" target="d1" edge="1">
+                    <mxGeometry x="0.1162" y="-10" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="875" y="330"/>
+                            <mxPoint x="1465" y="330"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e18" value="ops export" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#ea580c;fontSize=12;fontColor=#9a3412;dashed=1;exitX=0.5;exitY=1;entryX=0.5;entryY=1;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" parent="1" source="workers" target="r2" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="875" y="490"/>
+                            <mxPoint x="1465" y="490"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e19" value="read current mode" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#16a34a;fontSize=12;fontColor=#166534;dashed=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;entryPerimeter=0;" parent="1" source="workers" target="closed_mode" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e20" value="optional persist" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#ea580c;fontSize=12;fontColor=#9a3412;dashed=1;exitX=1;exitY=0.2;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" parent="1" source="closed_mode" target="d1" edge="1">
+                    <mxGeometry x="-0.4055" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e21" value="mode switch / hide / delete" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#dc2626;fontSize=12;fontColor=#991b1b;dashed=1;exitX=1;exitY=0.5;entryX=0.5;entryY=1;entryPerimeter=0;" parent="1" source="admin_ui" target="workers" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1040" y="675"/>
+                            <mxPoint x="1040" y="510"/>
+                            <mxPoint x="875" y="510"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

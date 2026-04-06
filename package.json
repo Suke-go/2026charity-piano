@@ -1,0 +1,33 @@
+{
+  "name": "charity",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @charity/live-audience",
+    "dev:api": "npm run dev -w @charity/live-api",
+    "start:local-answer-api": "npm run build:local-answer-api && npm run start -w @charity/local-answer-api",
+    "dev:audience": "npm run dev -w @charity/live-audience",
+    "dev:admin": "npm run dev -w @charity/live-admin",
+    "dev:ops": "npm run dev -w @charity/live-ops",
+    "dev:live-audience": "npm run dev -w @charity/live-audience",
+    "dev:live-admin": "npm run dev -w @charity/live-admin",
+    "dev:live-ops": "npm run dev -w @charity/live-ops",
+    "dev:live-api": "npm run dev -w @charity/live-api",
+    "build:local-answer-api": "npm run build -w @charity/export-core && npm run build -w @charity/local-answer-api",
+    "build:web": "npm run build -w @charity/live-audience",
+    "build:api": "npm run build -w @charity/live-api",
+    "build:audience": "npm run build -w @charity/live-audience",
+    "build:admin": "npm run build -w @charity/live-admin",
+    "build:ops": "npm run build -w @charity/live-ops",
+    "build:live-audience": "npm run build -w @charity/live-audience",
+    "build:live-admin": "npm run build -w @charity/live-admin",
+    "build:live-ops": "npm run build -w @charity/live-ops",
+    "build:live-api": "npm run build -w @charity/live-api",
+    "typecheck": "npm run typecheck -w @charity/shared && npm run typecheck -w @charity/export-core && npm run typecheck -w @charity/live-api && npm run typecheck -w @charity/local-answer-api && npm run typecheck -w @charity/live-audience && npm run typecheck -w @charity/live-admin && npm run typecheck -w @charity/live-ops && npm run typecheck -w @charity/ops-agent && npm run typecheck -w @charity/export-worker"
+  }
+}

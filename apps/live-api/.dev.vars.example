@@ -1,0 +1,13 @@
+# Copy to .dev.vars for local use or mirror into Cloudflare secrets/vars.
+
+TURNSTILE_SECRET_KEY=
+TURNSTILE_EXPECTED_HOSTNAME=localhost
+TURNSTILE_EXPECTED_ACTION=comment_post
+
+ACCESS_TEAM_DOMAIN=https://your-team.cloudflareaccess.com
+ACCESS_ADMIN_AUD=your-access-aud
+ADMIN_ALLOWED_EMAILS=admin@example.com
+
+WEB_ALLOWED_ORIGIN=http://localhost:5173
+BLOCKED_COMMENT_WORDS=
+ALLOW_LOCAL_DEV_BYPASS=false

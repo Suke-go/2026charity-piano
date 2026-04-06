@@ -1,0 +1,13 @@
+node_modules
+dist
+.wrangler
+.vite
+*.tsbuildinfo
+apps/**/.dev.vars
+apps/**/.env
+apps/**/.env.*
+!apps/**/.env.example
+!apps/**/.env.*.example
+var/
+logs/
+charity-api/

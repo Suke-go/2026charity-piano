@@ -1,0 +1,158 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", "Hiragino Sans", sans-serif;
+  color: #1b2430;
+  background: #eef2f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f4f7fb 0%, #e8edf4 100%);
+}
+
+button {
+  font: inherit;
+}
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+  display: grid;
+  gap: 18px;
+}
+
+.hero,
+.panel {
+  border-radius: 24px;
+  padding: 24px;
+}
+
+.hero {
+  background: linear-gradient(135deg, #16253c, #2b5f8c);
+  color: #fff;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(27, 36, 48, 0.08);
+}
+
+.hero h1,
+.panel h2 {
+  margin: 0;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+  opacity: 0.82;
+}
+
+.lead,
+.muted,
+small {
+  color: #677483;
+}
+
+.hero .lead {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  min-height: 40px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.status.ok {
+  background: #ddf4e6;
+  color: #1f7a45;
+}
+
+.status.warn {
+  background: #f6ebd5;
+  color: #9c6a12;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+dt {
+  font-size: 12px;
+  color: #677483;
+}
+
+dd {
+  margin: 6px 0 0;
+  font-weight: 600;
+}
+
+.service-list {
+  display: grid;
+  gap: 12px;
+}
+
+.service-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f8fafb;
+}
+
+button {
+  appearance: none;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #2b5f8c;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.error {
+  color: #b00020;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 20px 14px 32px;
+  }
+
+  .toolbar,
+  .service-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

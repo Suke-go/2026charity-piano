@@ -1,0 +1,33 @@
+name = "charity-api"
+main = "src/index.ts"
+compatibility_date = "2026-04-03"
+workers_dev = true
+
+[vars]
+WEB_ALLOWED_ORIGIN = "http://localhost:5173"
+TURNSTILE_EXPECTED_ACTION = "comment_post"
+TURNSTILE_EXPECTED_HOSTNAME = "localhost"
+BLOCKED_COMMENT_WORDS = ""
+ALLOW_LOCAL_DEV_BYPASS = "false"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "charity"
+database_id = "eca5469f-37a9-4a28-911d-31fcdcba0272"
+preview_database_id = "eca5469f-37a9-4a28-911d-31fcdcba0272"
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "charity-artifacts"
+
+[[queues.producers]]
+binding = "AUDIT_QUEUE"
+queue = "charity-audit"
+
+[[durable_objects.bindings]]
+name = "COMMENT_ROOMS"
+class_name = "CommentRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = [ "CommentRoom" ]
