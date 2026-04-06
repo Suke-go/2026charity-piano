@@ -1,8 +1,9 @@
 # local-macmini
 
-`mac mini` ローカル運用向けの設定置き場です。
+mac mini local deployment assets.
 
-- `nginx/`: リバースプロキシとローカルホスト名の設定
-- `launchd/`: 常駐プロセス管理
-- `scripts/`: health check / backup / rotation
-- `env/`: ローカル環境変数テンプレート
+Contents:
+- `nginx/`: local reverse-proxy and vhost examples
+- `launchd/`: service launch definitions
+- `scripts/`: health-check, backup, and rotation helpers
+- `env/`: local service env templates

@@ -1,166 +1,224 @@
-import { useEffect, useState } from "react";
-import {
-  fetchAudienceBootstrap,
-  submitAnswer,
-  type AudienceBootstrapResponse
-} from "../lib/api-client";
+import type {
+  CommentDto,
+  CommentStreamCommentCreated,
+  CommentStreamCommentDeleted,
+  CommentStreamRoomStateUpdated,
+  CommentStreamSyncRequired,
+  PublicEventResponse,
+  RoomStateDto
+} from "@charity/shared";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CommentForm } from "../components/comment-form";
+import { CommentList } from "../components/comment-list";
+import { RoomStatusBanner } from "../components/room-status-banner";
+import { StreamPlayer } from "../components/stream-player";
+import { buildStreamUrl, fetchComments, fetchEvent, postComment } from "../lib/api-client";
+
+type StreamState = "connecting" | "live" | "reconnecting";
 
 export function ViewerPage({ eventId }: { eventId: string }) {
-  const [page, setPage] = useState<AudienceBootstrapResponse | null>(null);
-  const [answerText, setAnswerText] = useState("");
+  const [page, setPage] = useState<PublicEventResponse | null>(null);
+  const [comments, setComments] = useState<CommentDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [posting, setPosting] = useState(false);
+  const [streamState, setStreamState] = useState<StreamState>("connecting");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const latestSeenAtRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
-        const nextPage = await fetchAudienceBootstrap(eventId);
+        const [nextPage, nextComments] = await Promise.all([fetchEvent(eventId), fetchComments(eventId, 50)]);
         if (cancelled) return;
         setPage(nextPage);
-        setError(null);
-      } catch (nextError) {
+        setComments(nextComments);
+        latestSeenAtRef.current = nextComments.at(-1)?.serverReceivedAt ?? null;
+        setLoadingError(null);
+      } catch (error) {
         if (cancelled) return;
-        setError(nextError instanceof Error ? nextError.message : "Failed to load audience page");
+        setLoadingError(error instanceof Error ? error.message : "Failed to load live page");
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
     void load();
-    const interval = window.setInterval(() => {
-      void load();
-    }, 10000);
 
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
     };
   }, [eventId]);
 
-  const canSubmit = page?.collectionState.mode === "OPEN" && Boolean(page.activePrompt) && !sending;
+  useEffect(() => {
+    const stream = new EventSource(buildStreamUrl(eventId));
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!page?.activePrompt) {
-      setError("No active prompt is available.");
-      return;
-    }
+    setStreamState("connecting");
 
-    const trimmedAnswer = answerText.trim();
-    if (!trimmedAnswer) {
-      setError("Answer text is required.");
+    stream.onopen = () => {
+      setStreamState("live");
+    };
+
+    stream.onerror = () => {
+      setStreamState("reconnecting");
+    };
+
+    stream.addEventListener("comment_created", (event) => {
+      const payload = JSON.parse((event as MessageEvent).data) as CommentStreamCommentCreated;
+      upsertComment(payload.comment);
+    });
+
+    stream.addEventListener("comment_deleted", (event) => {
+      const payload = JSON.parse((event as MessageEvent).data) as CommentStreamCommentDeleted;
+      setComments((current) =>
+        current.map((comment) =>
+          comment.commentId === payload.commentId
+            ? { ...comment, deletedFlag: true, displayStatus: "HIDDEN" }
+            : comment
+        )
+      );
+    });
+
+    stream.addEventListener("room_state_updated", (event) => {
+      const payload = JSON.parse((event as MessageEvent).data) as CommentStreamRoomStateUpdated;
+      setPage((current) => (current ? { ...current, roomState: payload.roomState } : current));
+    });
+
+    stream.addEventListener("sync_required", () => {
+      void refreshComments();
+    });
+
+    return () => {
+      stream.close();
+    };
+  }, [eventId]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void refreshComments();
+    }, 20000);
+    return () => window.clearInterval(interval);
+  }, [eventId]);
+
+  const visibleComments = useMemo(
+    () => comments.filter((comment) => comment.displayStatus === "VISIBLE" && !comment.deletedFlag),
+    [comments]
+  );
+
+  const roomState = page?.roomState ?? null;
+  const canPost = roomState?.mode === "OPEN" && !posting;
+
+  async function refreshComments() {
+    const nextComments = await fetchComments(eventId, 50);
+    setComments(nextComments);
+    latestSeenAtRef.current = nextComments.at(-1)?.serverReceivedAt ?? latestSeenAtRef.current;
+  }
+
+  function upsertComment(nextComment: CommentDto) {
+    latestSeenAtRef.current = nextComment.serverReceivedAt;
+    setComments((current) => {
+      const existingIndex = current.findIndex((comment) => comment.commentId === nextComment.commentId);
+      if (existingIndex >= 0) {
+        const copy = current.slice();
+        copy[existingIndex] = nextComment;
+        return copy;
+      }
+      return [...current, nextComment].slice(-100);
+    });
+  }
+
+  async function handleSubmit(turnstileValue: string) {
+    if (!draft.trim()) {
+      setSubmitError("Comment text is required.");
       return;
     }
 
     try {
-      setSending(true);
-      setError(null);
-      const result = await submitAnswer(eventId, page.activePrompt.promptId, trimmedAnswer);
-      setAnswerText("");
+      setPosting(true);
+      setSubmitError(null);
+      setSubmitMessage(null);
+      const result = await postComment(eventId, {
+        commentText: draft.trim(),
+        turnstileToken: turnstileValue,
+        clientRequestId: crypto.randomUUID()
+      });
+      setDraft("");
       setSubmitMessage(
-        result.duplicated
-          ? "The same request was already stored."
-          : `Answer saved at ${new Date(result.submission.createdAt).toLocaleTimeString()}.`
+        result.deliveryStatus === "broadcasted"
+          ? "Comment sent to the live timeline."
+          : "Comment saved. It will appear after the next sync."
       );
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to submit answer");
+      setTurnstileResetKey((current) => current + 1);
+      await refreshComments();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Failed to post comment");
     } finally {
-      setSending(false);
+      setPosting(false);
     }
   }
 
   return (
-    <main className="page">
-      <section className="hero">
-        <p className="eyebrow">Audience</p>
-        <h1>{page?.event.title ?? "Loading..."}</h1>
-        <p className="lead">
-          Read the current prompt, submit one answer, and wait for the admin to move to the next topic.
-        </p>
-      </section>
-
-      <section className="panel">
-        <div className="section-header">
-          <h2>Collection Status</h2>
-          <span className={`state-chip state-${page?.collectionState.mode.toLowerCase() ?? "unknown"}`}>
-            {page?.collectionState.mode ?? "UNKNOWN"}
-          </span>
+    <main className="page shell">
+      <section className="viewer-hero">
+        <div className="viewer-copy">
+          <p className="eyebrow">Lets Play For Peace Live</p>
+          <h1>{page?.event.title ?? "Loading live event..."}</h1>
+          <p className="hero-copy">
+            Cloudflare Stream playback and a moderated live comment lane. Video delivery and comment delivery stay
+            separate, so the page remains readable even if one side degrades.
+          </p>
         </div>
-        <p className="muted">
-          Last updated:{" "}
-          {page?.collectionState.updatedAt
-            ? new Date(page.collectionState.updatedAt).toLocaleString()
-            : "not available"}
-        </p>
+        <div className={`connection-pill connection-${streamState}`}>
+          <span className="dot" />
+          {streamState === "live" ? "Realtime connected" : streamState === "connecting" ? "Connecting..." : "Reconnecting..."}
+        </div>
       </section>
 
-      <section className="grid two-up">
-        <div className="panel">
-          <div className="section-header">
-            <h2>Current Prompt</h2>
-            <span className="counter">{page?.activePrompt ? 1 : 0}</span>
+      <section className="viewer-grid">
+        <div className="viewer-main">
+          <div className="panel">
+            <StreamPlayer playbackUid={page?.event.streamPlaybackUid ?? null} title={page?.event.title ?? eventId} />
           </div>
-          {page?.activePrompt ? (
-            <div className="stack">
-              <div className="prompt-card">
-                <strong>{page.activePrompt.title}</strong>
-                <p>{page.activePrompt.description || "No prompt description provided."}</p>
+
+          <div className="panel">
+            <RoomStatusBanner roomState={roomState} />
+            <CommentForm
+              disabled={!canPost}
+              draft={draft}
+              error={submitError}
+              busy={posting}
+              onDraftChange={setDraft}
+              onSubmit={(token) => void handleSubmit(token)}
+              onTokenChange={setTurnstileToken}
+              token={turnstileToken}
+              resetKey={turnstileResetKey}
+            />
+            {submitMessage ? <p className="success compact">{submitMessage}</p> : null}
+          </div>
+        </div>
+
+        <aside className="viewer-side">
+          <div className="panel panel-sticky">
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow small">Live Comments</p>
+                <h2>{visibleComments.length} visible</h2>
               </div>
-              <form className="form" onSubmit={(event) => void handleSubmit(event)}>
-                <label>
-                  Your answer
-                  <textarea
-                    rows={6}
-                    maxLength={280}
-                    value={answerText}
-                    onChange={(event) => setAnswerText(event.target.value)}
-                    placeholder="Write one short answer for the current prompt."
-                    disabled={!canSubmit}
-                  />
-                </label>
-                <div className="button-row">
-                  <button type="submit" disabled={!canSubmit}>
-                    {sending ? "Saving..." : "Submit answer"}
-                  </button>
-                </div>
-              </form>
+              <small className="muted">{page?.event.status ?? "UNKNOWN"}</small>
             </div>
-          ) : (
-            <p className="muted">No active prompt is currently published.</p>
-          )}
-        </div>
-
-        <div className="panel">
-          <div className="section-header">
-            <h2>How This Works</h2>
-            <span className="counter">3</span>
+            <CommentList comments={visibleComments} />
           </div>
-          <div className="stack">
-            <div className="prompt-card">
-              <strong>1. Read the prompt</strong>
-              <p>The admin can replace the prompt at any time. This page refreshes the prompt automatically.</p>
-            </div>
-            <div className="prompt-card">
-              <strong>2. Submit one answer</strong>
-              <p>Your answer is stored in the local SQLite database and can be exported later.</p>
-            </div>
-            <div className="prompt-card">
-              <strong>3. Wait for the next prompt</strong>
-              <p>If collection is paused or closed, the submit button stays disabled until it reopens.</p>
-            </div>
-          </div>
-        </div>
+        </aside>
       </section>
 
-      {loading ? <p className="muted">Loading...</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-      {submitMessage ? <p className="success">{submitMessage}</p> : null}
+      {loading ? <p className="muted">Loading live event...</p> : null}
+      {loadingError ? <p className="error">{loadingError}</p> : null}
     </main>
   );
 }

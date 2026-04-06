@@ -1,59 +1,34 @@
-import { AdminPage } from "./routes/admin-page";
 import { ViewerPage } from "./routes/viewer-page";
 
-function matchRoute(pathname: string) {
-  const viewerMatch = pathname.match(/^\/events\/([^/]+)$/);
-  if (viewerMatch?.[1]) {
-    return { type: "viewer" as const, eventId: viewerMatch[1] };
-  }
-  const adminMatch = pathname.match(/^\/admin\/events\/([^/]+)$/);
-  if (adminMatch?.[1]) {
-    return { type: "admin" as const, eventId: adminMatch[1] };
-  }
+const DEFAULT_EVENT_ID = import.meta.env.VITE_DEFAULT_EVENT_ID?.trim() ?? "";
+
+function resolveEventId(pathname: string) {
+  const match = pathname.match(/^\/events\/([^/]+)$/);
+  if (match?.[1]) return match[1];
+  if ((pathname === "/" || pathname === "") && DEFAULT_EVENT_ID) return DEFAULT_EVENT_ID;
   return null;
 }
 
 export default function App() {
-  const route = matchRoute(window.location.pathname);
+  const eventId = resolveEventId(window.location.pathname);
 
-  if (!route) {
+  if (!eventId) {
     return (
-      <main className="page">
-        <section className="hero">
-          <p className="eyebrow">Local AP Feedback</p>
-          <h1>Prompt-driven local answer collection</h1>
-          <p className="lead">
-            Audience devices open the current prompt page, submit one answer, and the admin page manages
-            prompts, collection state, moderation, and export.
+      <main className="page shell">
+        <section className="hero-card">
+          <p className="eyebrow">Lets Play For Peace</p>
+          <h1>Live Viewer is not mapped to an event yet.</h1>
+          <p className="hero-copy">
+            Set <code>VITE_DEFAULT_EVENT_ID</code> for the root path, or open <code>/events/&lt;eventId&gt;</code>
+            directly.
           </p>
-        </section>
-
-        <section className="grid two-up">
-          <article className="panel">
-            <h2>Audience</h2>
-            <p className="muted">
-              Open the current prompt, write one answer, and submit it to the local SQLite-backed API.
-            </p>
-            <a className="button-link" href="/events/local-feedback">/events/local-feedback</a>
-          </article>
-
-          <article className="panel">
-            <h2>Admin</h2>
-            <p className="muted">
-              Create prompts, open or close collection, review answers, hide records, and export JSON.
-            </p>
-            <a className="button-link secondary" href="/admin/events/local-feedback">
-              /admin/events/local-feedback
-            </a>
-          </article>
+          <div className="hero-actions">
+            <a className="button-link" href="/events/concert-2026-04-04">Open sample event</a>
+          </div>
         </section>
       </main>
     );
   }
 
-  if (route.type === "admin") {
-    return <AdminPage eventId={route.eventId} />;
-  }
-
-  return <ViewerPage eventId={route.eventId} />;
+  return <ViewerPage eventId={eventId} />;
 }

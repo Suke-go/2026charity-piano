@@ -1,52 +1,47 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
-const DEV_ACCESS_TOKEN = import.meta.env.VITE_DEV_ACCESS_TOKEN ?? "dev-admin";
+import { apiSchemas, COMMENT_MAX_LENGTH, type CommentDto, type PostCommentResponse, type PublicEventResponse } from "@charity/shared";
+import { z } from "zod";
 
-export type CollectionMode = "OPEN" | "PAUSED" | "CLOSED";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "https://charity-api.kosuke05816.workers.dev").replace(/\/$/, "");
 
-export interface LocalEventDto {
-  eventId: string;
-  title: string;
-  status: "LOCAL_ACTIVE";
+const commentsResponseSchema = z.object({
+  comments: z.array(apiSchemas.comment)
+});
+
+export { COMMENT_MAX_LENGTH };
+
+export async function fetchEvent(eventId: string): Promise<PublicEventResponse> {
+  return apiSchemas.publicEventResponse.parse(await requestJson(`/api/events/${eventId}`));
 }
 
-export interface PromptDto {
-  promptId: string;
-  title: string;
-  description: string;
-  createdAt: string;
+export async function fetchComments(eventId: string, limit = 50): Promise<CommentDto[]> {
+  const payload = commentsResponseSchema.parse(
+    await requestJson(`/api/events/${eventId}/comments?limit=${Math.min(limit, 100)}`)
+  );
+  return payload.comments;
 }
 
-export interface CollectionStateDto {
-  mode: CollectionMode;
-  updatedAt: string;
+export async function postComment(
+  eventId: string,
+  input: { commentText: string; turnstileToken: string; clientRequestId: string }
+): Promise<PostCommentResponse> {
+  return apiSchemas.postCommentResponse.parse(
+    await requestJson(`/api/events/${eventId}/comments`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    })
+  );
 }
 
-export interface SubmissionDto {
-  submissionId: string;
-  eventId: string;
-  promptId: string;
-  sessionId: string;
-  answerText: string;
-  clientRequestId: string;
-  createdAt: string;
-  deletedFlag: boolean;
+export function buildStreamUrl(eventId: string) {
+  return `${API_BASE_URL}/api/events/${eventId}/stream`;
 }
 
-export interface AudienceBootstrapResponse {
-  event: LocalEventDto;
-  activePrompt: PromptDto | null;
-  collectionState: CollectionStateDto;
+export function buildPlaybackUrl(playbackUid: string | null) {
+  if (!playbackUid) return null;
+  return `https://iframe.videodelivery.net/${playbackUid}`;
 }
 
-export interface AdminBootstrapResponse {
-  event: LocalEventDto;
-  prompts: PromptDto[];
-  activePromptId: string;
-  collectionState: CollectionStateDto;
-  submissionCount: number;
-}
-
-async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+async function requestJson(path: string, init?: RequestInit) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
     headers: {
@@ -55,113 +50,21 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     },
     ...init
   });
-  if (!response.ok) {
-    throw await readError(response);
-  }
-  return (await response.json()) as T;
-}
 
-async function requestBlob(path: string, init?: RequestInit) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: {
-      ...(init?.headers ?? {})
-    },
-    ...init
-  });
   if (!response.ok) {
     throw await readError(response);
   }
-  return response;
+
+  return response.json();
 }
 
 async function readError(response: Response) {
   try {
-    const payload = await response.json() as { error?: string; message?: string };
-    const error = new Error(payload.message ?? response.statusText);
-    error.name = payload.error ?? "request_failed";
+    const payload = apiSchemas.apiError.parse(await response.json());
+    const error = new Error(payload.message);
+    error.name = payload.error;
     return error;
   } catch {
-    return new Error(response.statusText);
+    return new Error(response.statusText || "Request failed");
   }
-}
-
-export async function fetchAudienceBootstrap(eventId: string) {
-  return requestJson<AudienceBootstrapResponse>(`/api/events/${eventId}/bootstrap`);
-}
-
-export async function submitAnswer(eventId: string, promptId: string, answerText: string) {
-  return requestJson<{ submission: SubmissionDto; duplicated: boolean }>(`/api/events/${eventId}/submissions`, {
-    method: "POST",
-    body: JSON.stringify({
-      promptId,
-      answerText,
-      clientRequestId: crypto.randomUUID()
-    })
-  });
-}
-
-export async function fetchAdminBootstrap(eventId: string) {
-  return requestJson<AdminBootstrapResponse>(`/api/admin/events/${eventId}/bootstrap`, {
-    headers: withDevAccessHeader()
-  });
-}
-
-export async function fetchAdminSubmissions(eventId: string, options?: {
-  includeDeleted?: boolean;
-  promptId?: string | null;
-}) {
-  const query = new URLSearchParams();
-  if (options?.includeDeleted) query.set("includeDeleted", "true");
-  if (options?.promptId) query.set("promptId", options.promptId);
-  const suffix = query.toString() ? `?${query.toString()}` : "";
-  return requestJson<{ submissions: SubmissionDto[] }>(`/api/admin/events/${eventId}/submissions${suffix}`, {
-    headers: withDevAccessHeader()
-  });
-}
-
-export async function setCollectionState(eventId: string, mode: CollectionMode) {
-  return requestJson<{ collectionState: CollectionStateDto }>(`/api/admin/events/${eventId}/state`, {
-    method: "POST",
-    body: JSON.stringify({ mode }),
-    headers: withDevAccessHeader()
-  });
-}
-
-export async function createPrompt(eventId: string, input: { title: string; description: string }) {
-  return requestJson<{ prompt: PromptDto; activePromptId: string }>(`/api/admin/events/${eventId}/prompt`, {
-    method: "POST",
-    body: JSON.stringify(input),
-    headers: withDevAccessHeader()
-  });
-}
-
-export async function hideSubmission(submissionId: string) {
-  return requestJson<{ ok: boolean; submissionId: string }>(`/api/admin/submissions/${submissionId}/hide`, {
-    method: "POST",
-    headers: withDevAccessHeader()
-  });
-}
-
-export async function downloadEventExport(eventId: string, includeDeleted = true) {
-  const response = await requestBlob(
-    `/api/admin/events/${eventId}/export?includeDeleted=${includeDeleted ? "true" : "false"}`,
-    {
-      headers: withDevAccessHeader()
-    }
-  );
-  const blob = await response.blob();
-  const downloadUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  const disposition = response.headers.get("content-disposition");
-  const filenameMatch = disposition?.match(/filename="?([^"]+)"?/i);
-
-  anchor.href = downloadUrl;
-  anchor.download = filenameMatch?.[1] ?? `${eventId}-prompt-answers.json`;
-  anchor.click();
-  URL.revokeObjectURL(downloadUrl);
-}
-
-export function withDevAccessHeader(): HeadersInit | undefined {
-  return DEV_ACCESS_TOKEN ? { "X-Dev-Access-Token": DEV_ACCESS_TOKEN } : undefined;
 }

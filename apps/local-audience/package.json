@@ -1,10 +1,10 @@
 {
-  "name": "@charity/live-admin",
+  "name": "@charity/local-audience",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 5174",
+    "dev": "vite --host 127.0.0.1 --port 5175",
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
