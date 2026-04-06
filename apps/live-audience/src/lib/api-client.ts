@@ -33,7 +33,7 @@ export async function postComment(
 }
 
 export function buildStreamUrl(eventId: string) {
-  return `${API_BASE_URL}/api/events/${eventId}/stream`;
+  return `${API_BASE_URL}/api/events/${eventId}/live-feed`;
 }
 
 export function buildPlaybackUrl(playbackUid: string | null) {
