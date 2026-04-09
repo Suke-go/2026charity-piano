@@ -9,13 +9,20 @@ const commentsResponseSchema = z.object({
 
 export { COMMENT_MAX_LENGTH };
 
+const SAFE_ID_RE = /^[a-zA-Z0-9_-]{1,128}$/;
+
+function validateId(id: string, label: string) {
+  if (!SAFE_ID_RE.test(id)) throw new Error(`Invalid ${label} format`);
+  return id;
+}
+
 export async function fetchEvent(eventId: string): Promise<PublicEventResponse> {
-  return apiSchemas.publicEventResponse.parse(await requestJson(`/api/events/${eventId}`));
+  return apiSchemas.publicEventResponse.parse(await requestJson(`/api/events/${validateId(eventId, "event ID")}`));
 }
 
 export async function fetchComments(eventId: string, limit = 50): Promise<CommentDto[]> {
   const payload = commentsResponseSchema.parse(
-    await requestJson(`/api/events/${eventId}/comments?limit=${Math.min(limit, 100)}`)
+    await requestJson(`/api/events/${validateId(eventId, "event ID")}/comments?limit=${Math.min(limit, 100)}`)
   );
   return payload.comments;
 }
@@ -25,7 +32,7 @@ export async function postComment(
   input: { commentText: string; turnstileToken: string; clientRequestId: string }
 ): Promise<PostCommentResponse> {
   return apiSchemas.postCommentResponse.parse(
-    await requestJson(`/api/events/${eventId}/comments`, {
+    await requestJson(`/api/events/${validateId(eventId, "event ID")}/comments`, {
       method: "POST",
       body: JSON.stringify(input)
     })
@@ -33,7 +40,7 @@ export async function postComment(
 }
 
 export function buildStreamUrl(eventId: string) {
-  return `${API_BASE_URL}/api/events/${eventId}/live-feed`;
+  return `${API_BASE_URL}/api/events/${validateId(eventId, "event ID")}/live-feed`;
 }
 
 export function buildPlaybackUrl(playbackUid: string | null) {
@@ -42,20 +49,33 @@ export function buildPlaybackUrl(playbackUid: string | null) {
 }
 
 async function requestJson(path: string, init?: RequestInit) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: {
-      "content-type": "application/json",
-      ...(init?.headers ?? {})
-    },
-    ...init
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
-  if (!response.ok) {
-    throw await readError(response);
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      credentials: "include",
+      headers: {
+        "content-type": "application/json",
+        ...(init?.headers ?? {})
+      },
+      ...init,
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw await readError(response);
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Request timed out");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return response.json();
 }
 
 async function readError(response: Response) {

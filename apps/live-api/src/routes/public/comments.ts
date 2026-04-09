@@ -45,6 +45,10 @@ export function registerPublicCommentRoutes(app: Hono<{ Bindings: Env; Variables
     if (!event) {
       return jsonError(c, 404, "event_not_found", "Event not found", c.get("requestId"));
     }
+    const contentLength = Number(c.req.header("content-length") ?? 0);
+    if (contentLength > 4096) {
+      return jsonError(c, 413, "payload_too_large", "Request body too large", c.get("requestId"));
+    }
     const body = apiSchemas.postCommentRequest.parse(await c.req.json());
 
     const verification = await verifyTurnstileToken(c.env, body.turnstileToken);

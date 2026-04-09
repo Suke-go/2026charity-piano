@@ -11,3 +11,4 @@ apps/**/.env.*
 var/
 logs/
 charity-api/
+letsplayforukraine/

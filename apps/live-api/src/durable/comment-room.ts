@@ -41,7 +41,8 @@ export class CommentRoom {
 
     if (request.method === "POST" && url.pathname.endsWith("/mode")) {
       const body = (await request.json()) as { mode: RoomMode; slowModeIntervalSec?: number };
-      const roomState = await this.setMode(eventId, body.mode, body.slowModeIntervalSec ?? 0);
+      const interval = Math.max(0, Math.min(3600, Math.floor(body.slowModeIntervalSec ?? 0)));
+      const roomState = await this.setMode(eventId, body.mode, interval);
       return Response.json(roomState);
     }
 

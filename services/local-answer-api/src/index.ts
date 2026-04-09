@@ -36,7 +36,7 @@ const maxAnswerLength = Number(process.env.LOCAL_ANSWER_MAX_LENGTH ?? 280);
 const sessionCookieName = "local_session_id";
 
 const server = createServer(async (request, response) => {
-  setCors(response);
+  setCors(response, request);
   if (request.method === "OPTIONS") {
     response.writeHead(204);
     response.end();
@@ -244,17 +244,30 @@ function normalizePath(pathname: string) {
   return pathname === "/" ? "/healthz" : pathname;
 }
 
+const MAX_BODY_BYTES = 16 * 1024;
+
 async function readJson<T>(request: IncomingMessage): Promise<T> {
   const chunks: Uint8Array[] = [];
+  let totalSize = 0;
   for await (const chunk of request) {
-    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+    const buf = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
+    totalSize += buf.length;
+    if (totalSize > MAX_BODY_BYTES) {
+      throw Object.assign(new Error("Request body too large"), { statusCode: 413 });
+    }
+    chunks.push(buf);
   }
   const raw = Buffer.concat(chunks).toString("utf8");
   return (raw ? JSON.parse(raw) : {}) as T;
 }
 
-function setCors(response: ServerResponse) {
-  response.setHeader("Access-Control-Allow-Origin", "*");
+const allowedOrigins = (process.env.LOCAL_ALLOWED_ORIGINS ?? "http://127.0.0.1:5174,http://127.0.0.1:5175,http://127.0.0.1:5176,http://localhost:5174,http://localhost:5175,http://localhost:5176").split(",").map((s) => s.trim());
+
+function setCors(response: ServerResponse, request?: IncomingMessage) {
+  const origin = request?.headers.origin ?? "";
+  if (allowedOrigins.includes(origin)) {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+  }
   response.setHeader("Access-Control-Allow-Headers", "content-type,x-dev-access-token");
   response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
 }

@@ -1,13 +1,10 @@
 import type {
   CommentDto,
-  CommentStreamCommentCreated,
-  CommentStreamCommentDeleted,
-  CommentStreamRoomStateUpdated,
-  CommentStreamSyncRequired,
   PublicEventResponse,
   RoomStateDto
 } from "@charity/shared";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { apiSchemas, SSE_EVENT_TYPES } from "@charity/shared";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CommentForm } from "../components/comment-form";
 import { CommentList } from "../components/comment-list";
 import { RoomStatusBanner } from "../components/room-status-banner";
@@ -29,6 +26,7 @@ export function ViewerPage({ eventId }: { eventId: string }) {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const latestSeenAtRef = useRef<string | null>(null);
+  const stableOnTokenChange = useCallback((value: string | null) => setTurnstileToken(value), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,28 +67,46 @@ export function ViewerPage({ eventId }: { eventId: string }) {
       setStreamState("reconnecting");
     };
 
-    stream.addEventListener("comment_created", (event) => {
-      const payload = JSON.parse((event as MessageEvent).data) as CommentStreamCommentCreated;
-      upsertComment(payload.comment);
+    stream.addEventListener(SSE_EVENT_TYPES.COMMENT_CREATED, (event) => {
+      try {
+        const payload = apiSchemas.commentStreamCommentCreated.parse(
+          JSON.parse((event as MessageEvent).data)
+        );
+        upsertComment(payload.comment);
+      } catch (err) {
+        console.error("Failed to parse comment_created SSE event:", err);
+      }
     });
 
-    stream.addEventListener("comment_deleted", (event) => {
-      const payload = JSON.parse((event as MessageEvent).data) as CommentStreamCommentDeleted;
-      setComments((current) =>
-        current.map((comment) =>
-          comment.commentId === payload.commentId
-            ? { ...comment, deletedFlag: true, displayStatus: "HIDDEN" }
-            : comment
-        )
-      );
+    stream.addEventListener(SSE_EVENT_TYPES.COMMENT_DELETED, (event) => {
+      try {
+        const payload = apiSchemas.commentStreamCommentDeleted.parse(
+          JSON.parse((event as MessageEvent).data)
+        );
+        setComments((current) =>
+          current.map((comment) =>
+            comment.commentId === payload.commentId
+              ? { ...comment, deletedFlag: true, displayStatus: "HIDDEN" }
+              : comment
+          )
+        );
+      } catch (err) {
+        console.error("Failed to parse comment_deleted SSE event:", err);
+      }
     });
 
-    stream.addEventListener("room_state_updated", (event) => {
-      const payload = JSON.parse((event as MessageEvent).data) as CommentStreamRoomStateUpdated;
-      setPage((current) => (current ? { ...current, roomState: payload.roomState } : current));
+    stream.addEventListener(SSE_EVENT_TYPES.ROOM_STATE_UPDATED, (event) => {
+      try {
+        const payload = apiSchemas.commentStreamRoomStateUpdated.parse(
+          JSON.parse((event as MessageEvent).data)
+        );
+        setPage((current) => (current ? { ...current, roomState: payload.roomState } : current));
+      } catch (err) {
+        console.error("Failed to parse room_state_updated SSE event:", err);
+      }
     });
 
-    stream.addEventListener("sync_required", () => {
+    stream.addEventListener(SSE_EVENT_TYPES.SYNC_REQUIRED, () => {
       void refreshComments();
     });
 
@@ -195,7 +211,7 @@ export function ViewerPage({ eventId }: { eventId: string }) {
               busy={posting}
               onDraftChange={setDraft}
               onSubmit={(token) => void handleSubmit(token)}
-              onTokenChange={setTurnstileToken}
+              onTokenChange={stableOnTokenChange}
               token={turnstileToken}
               resetKey={turnstileResetKey}
             />

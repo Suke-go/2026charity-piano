@@ -1,5 +1,9 @@
+import { buildPlaybackUrl } from "../lib/api-client";
+
 export function StreamPlayer({ playbackUid, title }: { playbackUid: string | null; title: string }) {
-  if (!playbackUid) {
+  const src = buildPlaybackUrl(playbackUid);
+
+  if (!src) {
     return (
       <div className="stream-fallback">
         <strong>Stream playback is not configured yet.</strong>
@@ -12,7 +16,7 @@ export function StreamPlayer({ playbackUid, title }: { playbackUid: string | nul
     <div className="stream-shell">
       <iframe
         className="stream-frame"
-        src={`https://iframe.videodelivery.net/${playbackUid}`}
+        src={src}
         title={title}
         allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
         allowFullScreen

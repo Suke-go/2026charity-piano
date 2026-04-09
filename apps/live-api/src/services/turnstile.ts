@@ -19,10 +19,7 @@ export async function verifyTurnstileToken(
   },
   token: string
 ): Promise<TurnstileVerificationResult> {
-  if (token === "dev-turnstile") {
-    return { success: true, errorCodes: [] };
-  }
-  if (env.ALLOW_LOCAL_DEV_BYPASS === "true") {
+  if (env.ALLOW_LOCAL_DEV_BYPASS === "true" && !env.TURNSTILE_SECRET_KEY) {
     return { success: true, errorCodes: [] };
   }
   if (!env.TURNSTILE_SECRET_KEY) {
