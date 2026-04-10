@@ -3,10 +3,19 @@ main = "src/index.ts"
 compatibility_date = "2026-04-03"
 workers_dev = true
 
+# --- Local development ---
 [vars]
-WEB_ALLOWED_ORIGIN = "http://localhost:5173"
+WEB_ALLOWED_ORIGIN = "http://localhost:5173,http://127.0.0.1:5173"
 TURNSTILE_EXPECTED_ACTION = "comment_post"
 TURNSTILE_EXPECTED_HOSTNAME = "localhost"
+BLOCKED_COMMENT_WORDS = ""
+ALLOW_LOCAL_DEV_BYPASS = "false"
+
+# --- Production (wrangler deploy --env production) ---
+[env.production.vars]
+WEB_ALLOWED_ORIGIN = "https://live.letsplayforpeace.com"
+TURNSTILE_EXPECTED_ACTION = "comment_post"
+TURNSTILE_EXPECTED_HOSTNAME = "live.letsplayforpeace.com"
 BLOCKED_COMMENT_WORDS = ""
 ALLOW_LOCAL_DEV_BYPASS = "false"
 
