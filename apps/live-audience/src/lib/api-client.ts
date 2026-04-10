@@ -40,7 +40,7 @@ export async function postComment(
 }
 
 export function buildStreamUrl(eventId: string) {
-  return `${API_BASE_URL}/api/events/${validateId(eventId, "event ID")}/live-feed`;
+  return `${API_BASE_URL}/api/events/${validateId(eventId, "event ID")}/live-updates`;
 }
 
 export function buildPlaybackUrl(playbackUid: string | null) {

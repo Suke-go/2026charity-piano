@@ -5,7 +5,7 @@ import { jsonError } from "../../lib/http";
 import { getRoomStub } from "../room-client";
 
 export function registerPublicStreamRoutes(app: Hono<{ Bindings: Env; Variables: AppVariables }>) {
-  app.get("/api/events/:eventId/live-feed", async (c) => {
+  app.get("/api/events/:eventId/live-updates", async (c) => {
     const eventId = c.req.param("eventId");
     const event = await ensureEvent(c.env.DB, eventId, {
       allowCreate: c.env.ALLOW_LOCAL_DEV_BYPASS === "true"
