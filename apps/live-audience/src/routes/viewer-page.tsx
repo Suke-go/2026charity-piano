@@ -5,11 +5,14 @@ import type {
 } from "@charity/shared";
 import { apiSchemas, SSE_EVENT_TYPES } from "@charity/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CommentForm } from "../components/comment-form";
-import { CommentList } from "../components/comment-list";
-import { RoomStatusBanner } from "../components/room-status-banner";
+import { CommentOverlay } from "../components/comment-overlay";
 import { StreamPlayer } from "../components/stream-player";
-import { buildStreamUrl, fetchComments, fetchEvent, postComment } from "../lib/api-client";
+import { TurnstileWidget } from "../components/turnstile-widget";
+import { buildStreamUrl, COMMENT_MAX_LENGTH, fetchComments, fetchEvent, postComment } from "../lib/api-client";
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ?? "";
+const TURNSTILE_ACTION = import.meta.env.VITE_TURNSTILE_ACTION?.trim() ?? "comment_post";
+const TURNSTILE_DEV_TOKEN = import.meta.env.VITE_TURNSTILE_DEV_TOKEN?.trim() ?? "";
 
 type StreamState = "connecting" | "live" | "reconnecting";
 
@@ -17,20 +20,36 @@ export function ViewerPage({ eventId }: { eventId: string }) {
   const [page, setPage] = useState<PublicEventResponse | null>(null);
   const [comments, setComments] = useState<CommentDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const [streamState, setStreamState] = useState<StreamState>("connecting");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [commentsVisible, setCommentsVisible] = useState(true);
+  const [inputOpen, setInputOpen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimerRef = useRef<number>(0);
   const latestSeenAtRef = useRef<string | null>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
   const stableOnTokenChange = useCallback((value: string | null) => setTurnstileToken(value), []);
+
+  // Auto-hide controls after 4s of inactivity (unless input is open)
+  function resetHideTimer() {
+    setControlsVisible(true);
+    clearTimeout(hideTimerRef.current);
+    if (!inputOpen) {
+      hideTimerRef.current = window.setTimeout(() => setControlsVisible(false), 4000);
+    }
+  }
+
+  useEffect(() => {
+    resetHideTimer();
+    return () => clearTimeout(hideTimerRef.current);
+  }, [inputOpen]);
 
   useEffect(() => {
     let cancelled = false;
-
     async function load() {
       try {
         const [nextPage, nextComments] = await Promise.all([fetchEvent(eventId), fetchComments(eventId, 50)]);
@@ -38,203 +57,202 @@ export function ViewerPage({ eventId }: { eventId: string }) {
         setPage(nextPage);
         setComments(nextComments);
         latestSeenAtRef.current = nextComments.at(-1)?.serverReceivedAt ?? null;
-        setLoadingError(null);
-      } catch (error) {
-        if (cancelled) return;
-        setLoadingError(error instanceof Error ? error.message : "Failed to load live page");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      } catch { /* retry on next interval */ }
+      finally { if (!cancelled) setLoading(false); }
     }
-
     void load();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [eventId]);
 
   useEffect(() => {
     const stream = new EventSource(buildStreamUrl(eventId));
-
     setStreamState("connecting");
-
-    stream.onopen = () => {
-      setStreamState("live");
-    };
-
-    stream.onerror = () => {
-      setStreamState("reconnecting");
-    };
+    stream.onopen = () => setStreamState("live");
+    stream.onerror = () => setStreamState("reconnecting");
 
     stream.addEventListener(SSE_EVENT_TYPES.COMMENT_CREATED, (event) => {
       try {
-        const payload = apiSchemas.commentStreamCommentCreated.parse(
-          JSON.parse((event as MessageEvent).data)
-        );
+        const payload = apiSchemas.commentStreamCommentCreated.parse(JSON.parse((event as MessageEvent).data));
         upsertComment(payload.comment);
-      } catch (err) {
-        console.error("Failed to parse comment_created SSE event:", err);
-      }
+      } catch { /* ignore */ }
     });
 
     stream.addEventListener(SSE_EVENT_TYPES.COMMENT_DELETED, (event) => {
       try {
-        const payload = apiSchemas.commentStreamCommentDeleted.parse(
-          JSON.parse((event as MessageEvent).data)
+        const payload = apiSchemas.commentStreamCommentDeleted.parse(JSON.parse((event as MessageEvent).data));
+        setComments((cur) =>
+          cur.map((c) => (c.commentId === payload.commentId ? { ...c, deletedFlag: true, displayStatus: "HIDDEN" } : c))
         );
-        setComments((current) =>
-          current.map((comment) =>
-            comment.commentId === payload.commentId
-              ? { ...comment, deletedFlag: true, displayStatus: "HIDDEN" }
-              : comment
-          )
-        );
-      } catch (err) {
-        console.error("Failed to parse comment_deleted SSE event:", err);
-      }
+      } catch { /* ignore */ }
     });
 
     stream.addEventListener(SSE_EVENT_TYPES.ROOM_STATE_UPDATED, (event) => {
       try {
-        const payload = apiSchemas.commentStreamRoomStateUpdated.parse(
-          JSON.parse((event as MessageEvent).data)
-        );
-        setPage((current) => (current ? { ...current, roomState: payload.roomState } : current));
-      } catch (err) {
-        console.error("Failed to parse room_state_updated SSE event:", err);
-      }
+        const payload = apiSchemas.commentStreamRoomStateUpdated.parse(JSON.parse((event as MessageEvent).data));
+        setPage((cur) => (cur ? { ...cur, roomState: payload.roomState } : cur));
+      } catch { /* ignore */ }
     });
 
-    stream.addEventListener(SSE_EVENT_TYPES.SYNC_REQUIRED, () => {
-      void refreshComments();
-    });
+    stream.addEventListener(SSE_EVENT_TYPES.SYNC_REQUIRED, () => { void refreshComments(); });
 
-    return () => {
-      stream.close();
-    };
+    return () => stream.close();
   }, [eventId]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      void refreshComments();
-    }, 20000);
-    return () => window.clearInterval(interval);
+    const interval = setInterval(() => void refreshComments(), 20000);
+    return () => clearInterval(interval);
   }, [eventId]);
 
   const visibleComments = useMemo(
-    () => comments.filter((comment) => comment.displayStatus === "VISIBLE" && !comment.deletedFlag),
+    () => comments.filter((c) => c.displayStatus === "VISIBLE" && !c.deletedFlag),
     [comments]
   );
 
-  const roomState = page?.roomState ?? null;
+  const roomState: RoomStateDto | null = page?.roomState ?? null;
   const canPost = roomState?.mode === "OPEN" && !posting;
+  const siteKeyConfigured = Boolean(TURNSTILE_SITE_KEY);
+  const devTokenAvailable = Boolean(TURNSTILE_DEV_TOKEN);
 
   async function refreshComments() {
-    const nextComments = await fetchComments(eventId, 50);
-    setComments(nextComments);
-    latestSeenAtRef.current = nextComments.at(-1)?.serverReceivedAt ?? latestSeenAtRef.current;
+    try {
+      const next = await fetchComments(eventId, 50);
+      setComments(next);
+      latestSeenAtRef.current = next.at(-1)?.serverReceivedAt ?? latestSeenAtRef.current;
+    } catch { /* ignore */ }
   }
 
-  function upsertComment(nextComment: CommentDto) {
-    latestSeenAtRef.current = nextComment.serverReceivedAt;
-    setComments((current) => {
-      const existingIndex = current.findIndex((comment) => comment.commentId === nextComment.commentId);
-      if (existingIndex >= 0) {
-        const copy = current.slice();
-        copy[existingIndex] = nextComment;
+  function upsertComment(next: CommentDto) {
+    latestSeenAtRef.current = next.serverReceivedAt;
+    setComments((cur) => {
+      const idx = cur.findIndex((c) => c.commentId === next.commentId);
+      if (idx >= 0) {
+        const copy = cur.slice();
+        copy[idx] = next;
         return copy;
       }
-      return [...current, nextComment].slice(-100);
+      return [...cur, next].slice(-100);
     });
   }
 
-  async function handleSubmit(turnstileValue: string) {
-    if (!draft.trim()) {
-      setSubmitError("Comment text is required.");
-      return;
-    }
-
+  async function handleSubmit() {
+    if (!draft.trim()) return;
+    const token = siteKeyConfigured ? turnstileToken : TURNSTILE_DEV_TOKEN;
+    if (!token) return;
     try {
       setPosting(true);
       setSubmitError(null);
-      setSubmitMessage(null);
-      const result = await postComment(eventId, {
+      await postComment(eventId, {
         commentText: draft.trim(),
-        turnstileToken: turnstileValue,
+        turnstileToken: token,
         clientRequestId: crypto.randomUUID()
       });
       setDraft("");
-      setSubmitMessage(
-        result.deliveryStatus === "broadcasted"
-          ? "Comment sent to the live timeline."
-          : "Comment saved. It will appear after the next sync."
-      );
-      setTurnstileResetKey((current) => current + 1);
+      setInputOpen(false);
+      setTurnstileResetKey((k) => k + 1);
       await refreshComments();
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Failed to post comment");
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to post");
     } finally {
       setPosting(false);
     }
   }
 
+  function toggleFullscreen() {
+    if (!shellRef.current) return;
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void shellRef.current.requestFullscreen();
+    }
+  }
+
+  if (loading) {
+    return <div className="viewer-shell"><div className="viewer-loading" /></div>;
+  }
+
   return (
-    <main className="page shell">
-      <section className="viewer-hero">
-        <div className="viewer-copy">
-          <p className="eyebrow">Lets Play For Peace Live</p>
-          <h1>{page?.event.title ?? "Loading live event..."}</h1>
-          <p className="hero-copy">
-            Cloudflare Stream playback and a moderated live comment lane. Video delivery and comment delivery stay
-            separate, so the page remains readable even if one side degrades.
-          </p>
-        </div>
-        <div className={`connection-pill connection-${streamState}`}>
-          <span className="dot" />
-          {streamState === "live" ? "Realtime connected" : streamState === "connecting" ? "Connecting..." : "Reconnecting..."}
-        </div>
-      </section>
+    <div
+      className="viewer-shell"
+      ref={shellRef}
+      onClick={() => resetHideTimer()}
+      onTouchStart={() => resetHideTimer()}
+    >
+      {/* Full-screen video + comment overlay */}
+      <div className="viewer-stage">
+        <StreamPlayer playbackUid={page?.event.streamPlaybackUid ?? null} title={page?.event.title ?? eventId} />
+        <CommentOverlay comments={visibleComments} visible={commentsVisible} />
+      </div>
 
-      <section className="viewer-grid">
-        <div className="viewer-main">
-          <div className="panel">
-            <StreamPlayer playbackUid={page?.event.streamPlaybackUid ?? null} title={page?.event.title ?? eventId} />
-          </div>
-
-          <div className="panel">
-            <RoomStatusBanner roomState={roomState} />
-            <CommentForm
+      {/* Floating bottom bar — auto-hides */}
+      <div className={`viewer-bar ${controlsVisible ? "is-visible" : ""}`}>
+        {inputOpen ? (
+          <div className="input-row">
+            <input
+              type="text"
+              className="comment-input"
+              value={draft}
+              maxLength={COMMENT_MAX_LENGTH}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void handleSubmit();
+                }
+              }}
+              placeholder="コメントを入力..."
               disabled={!canPost}
-              draft={draft}
-              error={submitError}
-              busy={posting}
-              onDraftChange={setDraft}
-              onSubmit={(token) => void handleSubmit(token)}
-              onTokenChange={stableOnTokenChange}
-              token={turnstileToken}
-              resetKey={turnstileResetKey}
+              autoFocus
             />
-            {submitMessage ? <p className="success compact">{submitMessage}</p> : null}
+            <button
+              className="send-btn"
+              disabled={!canPost || !draft.trim() || (!siteKeyConfigured && !devTokenAvailable)}
+              onClick={() => void handleSubmit()}
+            >
+              {posting ? "..." : "送信"}
+            </button>
+            <button className="icon-btn" onClick={() => setInputOpen(false)} aria-label="Close">✕</button>
           </div>
-        </div>
-
-        <aside className="viewer-side">
-          <div className="panel panel-sticky">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow small">Live Comments</p>
-                <h2>{visibleComments.length} visible</h2>
-              </div>
-              <small className="muted">{page?.event.status ?? "UNKNOWN"}</small>
-            </div>
-            <CommentList comments={visibleComments} />
+        ) : (
+          <div className="controls-row">
+            <button
+              className="open-input-btn"
+              onClick={() => { setInputOpen(true); resetHideTimer(); }}
+              disabled={roomState?.mode === "CLOSED"}
+            >
+              コメントする...
+            </button>
+            <button
+              className="icon-btn"
+              onClick={() => setCommentsVisible((v) => !v)}
+              aria-label={commentsVisible ? "Hide comments" : "Show comments"}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {commentsVisible ? (
+                  <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>
+                ) : (
+                  <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" opacity="0.3"/><line x1="3" y1="3" x2="21" y2="21"/></>
+                )}
+              </svg>
+            </button>
+            <button className="icon-btn" onClick={toggleFullscreen} aria-label="Fullscreen">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
-        </aside>
-      </section>
+        )}
 
-      {loading ? <p className="muted">Loading live event...</p> : null}
-      {loadingError ? <p className="error">{loadingError}</p> : null}
-    </main>
+        {/* Turnstile (hidden below input when active) */}
+        {inputOpen && siteKeyConfigured ? (
+          <TurnstileWidget
+            siteKey={TURNSTILE_SITE_KEY}
+            action={TURNSTILE_ACTION}
+            resetKey={turnstileResetKey}
+            onTokenChange={stableOnTokenChange}
+          />
+        ) : null}
+        {inputOpen && submitError ? <p className="input-error">{submitError}</p> : null}
+      </div>
+    </div>
   );
 }
