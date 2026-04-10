@@ -23,7 +23,7 @@ export default function App() {
             directly.
           </p>
           <div className="hero-actions">
-            <a className="button-link" href="/events/concert-2026-04-04">Open sample event</a>
+            <a className="button-link" href="/events/concert-2026-04-25">Open sample event</a>
           </div>
         </section>
       </main>
