@@ -1,10 +1,10 @@
-import { SSE_EVENT_TYPES, type CommentDto, type RoomMode, type RoomStateDto } from "@charity/shared";
+import { SSE_EVENT_TYPES, type PublicCommentDto, type RoomMode, type RoomStateDto } from "@charity/shared";
 import { loadRoomState, saveRoomState } from "../db/room-state";
 import { nowIso } from "../lib/time";
 import { createSseEventId, encodeSseEvent } from "../services/sse";
 
 type StreamEvent =
-  | { type: "comment_created"; payload: { eventId: string; comment: CommentDto } }
+  | { type: "comment_created"; payload: { eventId: string; comment: PublicCommentDto } }
   | { type: "comment_deleted"; payload: { eventId: string; commentId: string } }
   | { type: "room_state_updated"; payload: { eventId: string; roomState: RoomStateDto } }
   | { type: "sync_required"; payload: { eventId: string; lastEventId: string } };
@@ -68,15 +68,16 @@ export class CommentRoom {
     if (state.mode === "CLOSED") {
       return { allowed: false, reason: "room_closed" };
     }
+    const lastPostedAt = this.lastPostedAtBySession.get(sessionId) ?? 0;
+    const msSinceLastPost = lastPostedAt > 0 ? Math.max(0, Date.now() - lastPostedAt) : null;
     if (state.mode === "SLOW") {
       const intervalMs = Math.max(1, state.slowModeIntervalSec) * 1000;
-      const lastPostedAt = this.lastPostedAtBySession.get(sessionId) ?? 0;
       const now = Date.now();
       if (now - lastPostedAt < intervalMs) {
-        return { allowed: false, reason: "slow_mode_active" };
+        return { allowed: false, reason: "slow_mode_active", msSinceLastPost };
       }
     }
-    return { allowed: true, reason: null, roomState: { ...state, updatedAt: state.updatedAt } };
+    return { allowed: true, reason: null, roomState: { ...state, updatedAt: state.updatedAt }, msSinceLastPost };
   }
 
   private markPosted(sessionId: string, serverReceivedAt: string) {

@@ -1,11 +1,17 @@
-import { apiSchemas, COMMENT_MAX_LENGTH, type CommentDto, type PostCommentResponse, type PublicEventResponse } from "@charity/shared";
+import {
+  apiSchemas,
+  COMMENT_MAX_LENGTH,
+  type PostCommentResponse,
+  type PublicCommentDto,
+  type PublicEventResponse
+} from "@charity/shared";
 import { z } from "zod";
 
 const CONFIGURED_API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim() ?? "";
 const API_BASE_URL = resolveApiBaseUrl();
 
 const commentsResponseSchema = z.object({
-  comments: z.array(apiSchemas.comment)
+  comments: z.array(apiSchemas.publicComment)
 });
 
 export { COMMENT_MAX_LENGTH };
@@ -21,7 +27,7 @@ export async function fetchEvent(eventId: string): Promise<PublicEventResponse> 
   return apiSchemas.publicEventResponse.parse(await requestJson(`/api/events/${validateId(eventId, "event ID")}`));
 }
 
-export async function fetchComments(eventId: string, limit = 50): Promise<CommentDto[]> {
+export async function fetchComments(eventId: string, limit = 50): Promise<PublicCommentDto[]> {
   const payload = commentsResponseSchema.parse(
     await requestJson(`/api/events/${validateId(eventId, "event ID")}/comments?limit=${Math.min(limit, 100)}`)
   );

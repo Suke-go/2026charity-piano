@@ -1,5 +1,6 @@
 import type { Hono } from "hono";
 import type { AppVariables, Env } from "../../env";
+import type { CommentDto, PublicCommentDto } from "@charity/shared";
 import { apiSchemas } from "@charity/shared";
 import { ensureEvent } from "../../db/events";
 import {
@@ -8,7 +9,7 @@ import {
   insertComment,
   listComments
 } from "../../db/comments";
-import { evaluateComment } from "../../services/moderation";
+import { decideCommentPolicy } from "../../services/moderation";
 import { verifyTurnstileToken } from "../../services/turnstile";
 import { ensureSessionId } from "../../services/session";
 import { createId } from "../../lib/ids";
@@ -34,7 +35,7 @@ export function registerPublicCommentRoutes(app: Hono<{ Bindings: Env; Variables
     const limit = Math.min(Number(c.req.query("limit") ?? 50), 100);
     const cursor = c.req.query("cursor") ?? c.req.query("since") ?? null;
     const comments = await listComments(c.env.DB, eventId, limit, cursor, false);
-    return jsonOk(c, { comments });
+    return jsonOk(c, { comments: comments.map(toPublicComment) });
   });
 
   app.post("/api/events/:eventId/comments", async (c) => {
@@ -77,7 +78,6 @@ export function registerPublicCommentRoutes(app: Hono<{ Bindings: Env; Variables
     }
 
     const session = ensureSessionId(c.req.header("Cookie"));
-    const moderation = evaluateComment(body.commentText, parseBlockedWords(c.env.BLOCKED_COMMENT_WORDS));
     const roomCheck = await canPostInRoom(c.env, eventId, session.sessionId);
     if (!roomCheck.allowed) {
       const reason = roomCheck.reason ?? "comment_unavailable";
@@ -89,6 +89,9 @@ export function registerPublicCommentRoutes(app: Hono<{ Bindings: Env; Variables
         c.get("requestId")
       );
     }
+    const policy = decideCommentPolicy(body.commentText, parseBlockedWords(c.env.BLOCKED_COMMENT_WORDS), {
+      msSinceLastPost: roomCheck.msSinceLastPost
+    });
 
     const existingCommentId = await findCommentByDedupKey(
       c.env.DB,
@@ -107,16 +110,12 @@ export function registerPublicCommentRoutes(app: Hono<{ Bindings: Env; Variables
         serverReceivedAt: existingComment.serverReceivedAt,
         displayStatus: existingComment.displayStatus,
         moderationStatus: existingComment.moderationStatus,
-        deliveryStatus: "broadcasted" as const
+        deliveryStatus: deliveryStatusForStoredComment(existingComment)
       });
     }
 
     const commentId = createId();
     const serverReceivedAt = nowIso();
-    const displayStatus = moderation.status === "BLOCKED" ? "HIDDEN" : "VISIBLE";
-    const moderationStatus = moderation.status;
-    const moderationReason = moderation.reason;
-
     try {
       await insertComment(
         c.env.DB,
@@ -126,10 +125,13 @@ export function registerPublicCommentRoutes(app: Hono<{ Bindings: Env; Variables
           userSessionId: session.sessionId,
           commentText: body.commentText,
           serverReceivedAt,
-          displayStatus,
-          moderationStatus,
+          displayStatus: policy.displayStatus,
+          moderationStatus: policy.moderationStatus,
           deletedFlag: false,
-          moderationReason
+          moderationReason: policy.moderationReason,
+          renderPriority: policy.renderPriority,
+          renderPolicy: policy.renderPolicy,
+          displayModeHint: policy.displayModeHint
         },
         body.clientRequestId
       );
@@ -153,7 +155,7 @@ export function registerPublicCommentRoutes(app: Hono<{ Bindings: Env; Variables
         serverReceivedAt: dedupComment.serverReceivedAt,
         displayStatus: dedupComment.displayStatus,
         moderationStatus: dedupComment.moderationStatus,
-        deliveryStatus: "broadcasted" as const
+        deliveryStatus: deliveryStatusForStoredComment(dedupComment)
       });
     }
 
@@ -164,29 +166,34 @@ export function registerPublicCommentRoutes(app: Hono<{ Bindings: Env; Variables
       actionType: "comment_created",
       targetId: commentId,
       actorId: session.sessionId,
-      payload: { moderationStatus, displayStatus }
+      payload: {
+        moderationStatus: policy.moderationStatus,
+        displayStatus: policy.displayStatus,
+        renderPriority: policy.renderPriority,
+        renderPolicy: policy.renderPolicy
+      }
     });
 
-    const deliveryStatus = (await broadcastCommentCreated(c.env, eventId, {
-      commentId,
-      eventId,
-      userSessionId: session.sessionId,
-      commentText: body.commentText,
-      serverReceivedAt,
-      displayStatus,
-      moderationStatus,
-      deletedFlag: false,
-      moderationReason
-    }))
-      ? "broadcasted"
-      : "delayed";
+    const deliveryStatus = policy.displayStatus === "VISIBLE" && policy.renderPolicy !== "ADMIN_ONLY"
+      ? (await broadcastCommentCreated(c.env, eventId, {
+          commentId,
+          eventId,
+          commentText: body.commentText,
+          serverReceivedAt,
+          renderPriority: policy.renderPriority,
+          renderPolicy: policy.renderPolicy,
+          displayModeHint: policy.displayModeHint
+        }))
+        ? "broadcasted"
+        : "delayed"
+      : "filtered";
 
     if (session.setCookie) c.header("Set-Cookie", session.setCookie);
     return jsonCreated(c, {
       commentId,
       serverReceivedAt,
-      displayStatus,
-      moderationStatus,
+      displayStatus: policy.displayStatus,
+      moderationStatus: policy.moderationStatus,
       deliveryStatus
     });
   });
@@ -206,4 +213,25 @@ export function registerPublicCommentRoutes(app: Hono<{ Bindings: Env; Variables
 
 function parseBlockedWords(value?: string) {
   return value?.split(",").map((entry) => entry.trim()).filter(Boolean) ?? [];
+}
+
+function deliveryStatusForStoredComment(comment: {
+  displayStatus: string;
+  renderPolicy: string;
+}) {
+  return comment.displayStatus === "VISIBLE" && comment.renderPolicy !== "ADMIN_ONLY"
+    ? "broadcasted" as const
+    : "filtered" as const;
+}
+
+function toPublicComment(comment: CommentDto): PublicCommentDto {
+  return {
+    commentId: comment.commentId,
+    eventId: comment.eventId,
+    commentText: comment.commentText,
+    serverReceivedAt: comment.serverReceivedAt,
+    renderPriority: comment.renderPriority,
+    renderPolicy: comment.renderPolicy,
+    displayModeHint: comment.displayModeHint
+  };
 }

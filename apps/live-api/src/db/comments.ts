@@ -1,6 +1,7 @@
 import type { CommentDto, DisplayStatus, ModerationStatus } from "@charity/shared";
 import { createId } from "../lib/ids";
 import { nowIso } from "../lib/time";
+import { rankVisibleComment } from "../services/moderation";
 
 interface CommentRow {
   comment_id: string;
@@ -25,6 +26,7 @@ export async function listComments(
   const binds: unknown[] = [eventId];
   if (!includeDeleted) {
     clauses.push("deleted_flag = 0");
+    clauses.push("display_status = 'VISIBLE'");
   }
   if (cursor) {
     clauses.push("server_received_at > ?");
@@ -54,6 +56,7 @@ export async function listAllComments(
   const binds: unknown[] = [eventId];
   if (!includeDeleted) {
     clauses.push("deleted_flag = 0");
+    clauses.push("display_status = 'VISIBLE'");
   }
 
   const query = await db
@@ -145,6 +148,14 @@ export async function softDeleteComment(db: D1Database, commentId: string) {
 }
 
 function mapCommentRow(row: CommentRow): CommentDto {
+  const renderDecision = row.display_status === "VISIBLE"
+    ? rankVisibleComment(row.comment_text)
+    : {
+        renderPriority: "LOW" as const,
+        renderPolicy: "ADMIN_ONLY" as const,
+        displayModeHint: "COMPACT" as const
+      };
+
   return {
     commentId: row.comment_id,
     eventId: row.event_id,
@@ -154,6 +165,7 @@ function mapCommentRow(row: CommentRow): CommentDto {
     displayStatus: row.display_status,
     moderationStatus: row.moderation_status,
     deletedFlag: Boolean(row.deleted_flag),
-    moderationReason: row.moderation_reason
+    moderationReason: row.moderation_reason,
+    ...renderDecision
   };
 }

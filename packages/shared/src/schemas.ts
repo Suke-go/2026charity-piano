@@ -1,6 +1,9 @@
 import { z } from "zod";
 import {
   COMMENT_MAX_LENGTH,
+  COMMENT_DISPLAY_MODES,
+  COMMENT_RENDER_POLICIES,
+  COMMENT_RENDER_PRIORITIES,
   DISPLAY_STATUSES,
   MODERATION_STATUSES,
   ROOM_MODES
@@ -9,6 +12,9 @@ import {
 export const roomModeSchema = z.enum(ROOM_MODES);
 export const displayStatusSchema = z.enum(DISPLAY_STATUSES);
 export const moderationStatusSchema = z.enum(MODERATION_STATUSES);
+export const commentRenderPrioritySchema = z.enum(COMMENT_RENDER_PRIORITIES);
+export const commentRenderPolicySchema = z.enum(COMMENT_RENDER_POLICIES);
+export const commentDisplayModeSchema = z.enum(COMMENT_DISPLAY_MODES);
 
 export const eventIdSchema = z.string().min(1).max(128);
 export const commentIdSchema = z.string().min(1).max(128);
@@ -37,12 +43,25 @@ export const commentSchema = z.object({
   displayStatus: displayStatusSchema,
   moderationStatus: moderationStatusSchema,
   deletedFlag: z.boolean(),
-  moderationReason: z.string().min(1).max(512).nullable()
+  moderationReason: z.string().min(1).max(512).nullable(),
+  renderPriority: commentRenderPrioritySchema,
+  renderPolicy: commentRenderPolicySchema,
+  displayModeHint: commentDisplayModeSchema
+});
+
+export const publicCommentSchema = z.object({
+  commentId: commentIdSchema,
+  eventId: eventIdSchema,
+  commentText: z.string().min(1).max(COMMENT_MAX_LENGTH),
+  serverReceivedAt: isoTimestampSchema,
+  renderPriority: commentRenderPrioritySchema,
+  renderPolicy: commentRenderPolicySchema,
+  displayModeHint: commentDisplayModeSchema
 });
 
 export const commentStreamCommentCreatedSchema = z.object({
   eventId: eventIdSchema,
-  comment: commentSchema
+  comment: publicCommentSchema
 });
 
 export const commentStreamRoomStateUpdatedSchema = z.object({
@@ -76,7 +95,7 @@ export const postCommentResponseSchema = z.object({
   serverReceivedAt: isoTimestampSchema,
   displayStatus: displayStatusSchema,
   moderationStatus: moderationStatusSchema,
-  deliveryStatus: z.enum(["broadcasted", "delayed"])
+  deliveryStatus: z.enum(["broadcasted", "delayed", "filtered"])
 });
 
 export const adminSetModeRequestSchema = z.object({

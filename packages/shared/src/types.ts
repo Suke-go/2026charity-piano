@@ -1,4 +1,11 @@
-import type { DisplayStatus, ModerationStatus, RoomMode } from "./constants";
+import type {
+  CommentDisplayMode,
+  CommentRenderPolicy,
+  CommentRenderPriority,
+  DisplayStatus,
+  ModerationStatus,
+  RoomMode
+} from "./constants";
 
 export interface EventDto {
   eventId: string;
@@ -17,6 +24,19 @@ export interface CommentDto {
   moderationStatus: ModerationStatus;
   deletedFlag: boolean;
   moderationReason: string | null;
+  renderPriority: CommentRenderPriority;
+  renderPolicy: CommentRenderPolicy;
+  displayModeHint: CommentDisplayMode;
+}
+
+export interface PublicCommentDto {
+  commentId: string;
+  eventId: string;
+  commentText: string;
+  serverReceivedAt: string;
+  renderPriority: CommentRenderPriority;
+  renderPolicy: CommentRenderPolicy;
+  displayModeHint: CommentDisplayMode;
 }
 
 export interface RoomStateDto {
@@ -41,7 +61,7 @@ export interface PostCommentResponse {
   serverReceivedAt: string;
   displayStatus: DisplayStatus;
   moderationStatus: ModerationStatus;
-  deliveryStatus: "broadcasted" | "delayed";
+  deliveryStatus: "broadcasted" | "delayed" | "filtered";
 }
 
 export interface AdminSetModeRequest {
@@ -51,7 +71,7 @@ export interface AdminSetModeRequest {
 
 export interface CommentStreamCommentCreated {
   eventId: string;
-  comment: CommentDto;
+  comment: PublicCommentDto;
 }
 
 export interface CommentStreamRoomStateUpdated {

@@ -1,4 +1,4 @@
-import { apiSchemas, type CommentDto, type RoomMode, type RoomStateDto } from "@charity/shared";
+import { apiSchemas, type PublicCommentDto, type RoomMode, type RoomStateDto } from "@charity/shared";
 import type { Env } from "../env";
 
 async function fetchRoomJson<T>(responsePromise: Promise<Response>, label: string): Promise<T> {
@@ -25,7 +25,7 @@ export async function getRoomStateFromRoom(env: Env, eventId: string): Promise<R
 export async function canPostInRoom(env: Env, eventId: string, sessionId: string) {
   const url = new URL("https://room/can-post");
   url.searchParams.set("eventId", eventId);
-  return fetchRoomJson<{ allowed?: boolean; reason?: string | null }>(
+  return fetchRoomJson<{ allowed?: boolean; reason?: string | null; msSinceLastPost?: number | null }>(
     getRoomStub(env, eventId).fetch(url.toString(), {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -69,7 +69,7 @@ export async function updateRoomMode(
   return apiSchemas.roomState.parse(payload);
 }
 
-export async function broadcastCommentCreated(env: Env, eventId: string, comment: CommentDto) {
+export async function broadcastCommentCreated(env: Env, eventId: string, comment: PublicCommentDto) {
   const url = new URL("https://room/broadcast");
   url.searchParams.set("eventId", eventId);
   const response = await getRoomStub(env, eventId).fetch(url.toString(), {

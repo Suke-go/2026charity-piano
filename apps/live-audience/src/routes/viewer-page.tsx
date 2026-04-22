@@ -1,5 +1,5 @@
 import type {
-  CommentDto,
+  PublicCommentDto,
   PublicEventResponse,
   RoomStateDto
 } from "@charity/shared";
@@ -13,7 +13,7 @@ type StreamState = "connecting" | "live" | "reconnecting";
 
 export function ViewerPage({ eventId }: { eventId: string }) {
   const [page, setPage] = useState<PublicEventResponse | null>(null);
-  const [comments, setComments] = useState<CommentDto[]>([]);
+  const [comments, setComments] = useState<PublicCommentDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -76,9 +76,7 @@ export function ViewerPage({ eventId }: { eventId: string }) {
     stream.addEventListener(SSE_EVENT_TYPES.COMMENT_DELETED, (event) => {
       try {
         const payload = apiSchemas.commentStreamCommentDeleted.parse(JSON.parse((event as MessageEvent).data));
-        setComments((cur) =>
-          cur.map((c) => (c.commentId === payload.commentId ? { ...c, deletedFlag: true, displayStatus: "HIDDEN" } : c))
-        );
+        setComments((cur) => cur.filter((c) => c.commentId !== payload.commentId));
       } catch {
         // Ignore malformed frames and rely on the next refresh cycle.
       }
@@ -104,7 +102,7 @@ export function ViewerPage({ eventId }: { eventId: string }) {
   }, [eventId]);
 
   const visibleComments = useMemo(
-    () => comments.filter((c) => c.displayStatus === "VISIBLE" && !c.deletedFlag),
+    () => comments,
     [comments]
   );
 
@@ -123,7 +121,7 @@ export function ViewerPage({ eventId }: { eventId: string }) {
     }
   }
 
-  function upsertComment(next: CommentDto) {
+  function upsertComment(next: PublicCommentDto) {
     latestSeenAtRef.current = next.serverReceivedAt;
     setComments((cur) => {
       const idx = cur.findIndex((c) => c.commentId === next.commentId);

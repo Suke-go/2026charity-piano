@@ -7,6 +7,15 @@ export type DisplayStatus = (typeof DISPLAY_STATUSES)[number];
 export const MODERATION_STATUSES = ["NONE", "BLOCKED", "PENDING"] as const;
 export type ModerationStatus = (typeof MODERATION_STATUSES)[number];
 
+export const COMMENT_RENDER_PRIORITIES = ["SYSTEM", "HIGH", "NORMAL", "LOW"] as const;
+export type CommentRenderPriority = (typeof COMMENT_RENDER_PRIORITIES)[number];
+
+export const COMMENT_RENDER_POLICIES = ["ALWAYS", "NORMAL", "DROP_WHEN_DENSE", "ADMIN_ONLY"] as const;
+export type CommentRenderPolicy = (typeof COMMENT_RENDER_POLICIES)[number];
+
+export const COMMENT_DISPLAY_MODES = ["SCROLL", "TOP_FIXED", "BOTTOM_FIXED", "COMPACT"] as const;
+export type CommentDisplayMode = (typeof COMMENT_DISPLAY_MODES)[number];
+
 export const COMMENT_MAX_LENGTH = 200;
 export const SESSION_COOKIE_NAME = "live_session";
 export const DEFAULT_COMMENT_PAGE_SIZE = 50;

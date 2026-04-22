@@ -10,6 +10,7 @@ import {
   eventSchema,
   postCommentRequestSchema,
   postCommentResponseSchema,
+  publicCommentSchema,
   publicEventResponseSchema,
   roomStateSchema
 } from "./schemas";
@@ -18,6 +19,7 @@ export const apiSchemas = {
   event: eventSchema,
   roomState: roomStateSchema,
   comment: commentSchema,
+  publicComment: publicCommentSchema,
   publicEventResponse: publicEventResponseSchema,
   postCommentRequest: postCommentRequestSchema,
   postCommentResponse: postCommentResponseSchema,
