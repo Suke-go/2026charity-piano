@@ -29,7 +29,7 @@ export async function fetchComments(eventId: string, limit = 50): Promise<Commen
 
 export async function postComment(
   eventId: string,
-  input: { commentText: string; turnstileToken: string; clientRequestId: string }
+  input: { commentText: string; turnstileToken?: string; clientRequestId: string }
 ): Promise<PostCommentResponse> {
   return apiSchemas.postCommentResponse.parse(
     await requestJson(`/api/events/${validateId(eventId, "event ID")}/comments`, {

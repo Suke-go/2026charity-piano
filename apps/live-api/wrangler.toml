@@ -3,11 +3,15 @@ main = "src/index.ts"
 compatibility_date = "2026-04-03"
 workers_dev = true
 
-# --- Local development ---
+# --- Default deployment / local development ---
+# This top-level environment is what `wrangler deploy` uses for the workers.dev API.
+# Turnstile is disabled by default; hostname/action are only used when
+# PUBLIC_COMMENT_TURNSTILE_REQUIRED is explicitly set to "true".
 [vars]
-WEB_ALLOWED_ORIGIN = "http://localhost:5173,http://127.0.0.1:5173"
+WEB_ALLOWED_ORIGIN = "http://localhost:5173,http://127.0.0.1:5173,https://live.letsplayforpeace.com"
 TURNSTILE_EXPECTED_ACTION = "comment_post"
-TURNSTILE_EXPECTED_HOSTNAME = "localhost"
+TURNSTILE_EXPECTED_HOSTNAME = "live.letsplayforpeace.com"
+PUBLIC_COMMENT_TURNSTILE_REQUIRED = "false"
 BLOCKED_COMMENT_WORDS = ""
 ALLOW_LOCAL_DEV_BYPASS = "false"
 
@@ -16,6 +20,7 @@ ALLOW_LOCAL_DEV_BYPASS = "false"
 WEB_ALLOWED_ORIGIN = "https://live.letsplayforpeace.com"
 TURNSTILE_EXPECTED_ACTION = "comment_post"
 TURNSTILE_EXPECTED_HOSTNAME = "live.letsplayforpeace.com"
+PUBLIC_COMMENT_TURNSTILE_REQUIRED = "false"
 BLOCKED_COMMENT_WORDS = ""
 ALLOW_LOCAL_DEV_BYPASS = "false"
 
@@ -25,7 +30,17 @@ database_name = "charity"
 database_id = "eca5469f-37a9-4a28-911d-31fcdcba0272"
 preview_database_id = "eca5469f-37a9-4a28-911d-31fcdcba0272"
 
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "charity"
+database_id = "eca5469f-37a9-4a28-911d-31fcdcba0272"
+preview_database_id = "eca5469f-37a9-4a28-911d-31fcdcba0272"
+
 [[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "charity-artifacts"
+
+[[env.production.r2_buckets]]
 binding = "R2_BUCKET"
 bucket_name = "charity-artifacts"
 
@@ -33,7 +48,15 @@ bucket_name = "charity-artifacts"
 binding = "AUDIT_QUEUE"
 queue = "charity-audit"
 
+[[env.production.queues.producers]]
+binding = "AUDIT_QUEUE"
+queue = "charity-audit"
+
 [[durable_objects.bindings]]
+name = "COMMENT_ROOMS"
+class_name = "CommentRoom"
+
+[[env.production.durable_objects.bindings]]
 name = "COMMENT_ROOMS"
 class_name = "CommentRoom"
 

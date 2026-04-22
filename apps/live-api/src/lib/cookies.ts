@@ -18,5 +18,5 @@ export function getSessionCookie(cookieHeader: string | null | undefined) {
 
 export function createSessionCookie(sessionId: string = createId()) {
   const maxAge = 60 * 60 * 24 * 30;
-  return `${SESSION_COOKIE_NAME}=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+  return `${SESSION_COOKIE_NAME}=${sessionId}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${maxAge}`;
 }

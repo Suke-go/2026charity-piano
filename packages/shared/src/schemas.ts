@@ -67,7 +67,7 @@ export const publicEventResponseSchema = z.object({
 
 export const postCommentRequestSchema = z.object({
   commentText: z.string().min(1).max(COMMENT_MAX_LENGTH),
-  turnstileToken: z.string().min(1),
+  turnstileToken: z.string().min(1).optional(),
   clientRequestId: z.string().min(1).max(128)
 });
 

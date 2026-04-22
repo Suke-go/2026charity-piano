@@ -32,7 +32,7 @@ export interface PublicEventResponse {
 
 export interface PostCommentRequest {
   commentText: string;
-  turnstileToken: string;
+  turnstileToken?: string;
   clientRequestId: string;
 }
 

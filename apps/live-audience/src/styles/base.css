@@ -270,8 +270,11 @@ button, textarea, input {
   padding-left: 16px;
 }
 
-.turnstile-block {
+.input-hint {
   margin-top: 6px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.62);
+  padding-left: 16px;
 }
 
 /* ========== Landing page (no-event fallback) ========== */

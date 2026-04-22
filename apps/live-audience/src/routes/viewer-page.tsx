@@ -4,15 +4,10 @@ import type {
   RoomStateDto
 } from "@charity/shared";
 import { apiSchemas, SSE_EVENT_TYPES } from "@charity/shared";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CommentOverlay } from "../components/comment-overlay";
 import { StreamPlayer } from "../components/stream-player";
-import { TurnstileWidget } from "../components/turnstile-widget";
 import { buildStreamUrl, COMMENT_MAX_LENGTH, fetchComments, fetchEvent, postComment } from "../lib/api-client";
-
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ?? "";
-const TURNSTILE_ACTION = import.meta.env.VITE_TURNSTILE_ACTION?.trim() ?? "comment_post";
-const TURNSTILE_DEV_TOKEN = import.meta.env.VITE_TURNSTILE_DEV_TOKEN?.trim() ?? "";
 
 type StreamState = "connecting" | "live" | "reconnecting";
 
@@ -23,18 +18,14 @@ export function ViewerPage({ eventId }: { eventId: string }) {
   const [draft, setDraft] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
-  const [streamState, setStreamState] = useState<StreamState>("connecting");
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [, setStreamState] = useState<StreamState>("connecting");
   const [commentsVisible, setCommentsVisible] = useState(true);
   const [inputOpen, setInputOpen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimerRef = useRef<number>(0);
   const latestSeenAtRef = useRef<string | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
-  const stableOnTokenChange = useCallback((value: string | null) => setTurnstileToken(value), []);
 
-  // Auto-hide controls after 4s of inactivity (unless input is open)
   function resetHideTimer() {
     setControlsVisible(true);
     clearTimeout(hideTimerRef.current);
@@ -57,8 +48,11 @@ export function ViewerPage({ eventId }: { eventId: string }) {
         setPage(nextPage);
         setComments(nextComments);
         latestSeenAtRef.current = nextComments.at(-1)?.serverReceivedAt ?? null;
-      } catch { /* retry on next interval */ }
-      finally { if (!cancelled) setLoading(false); }
+      } catch {
+        // Retry through SSE and the refresh interval below.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
     void load();
     return () => { cancelled = true; };
@@ -74,7 +68,9 @@ export function ViewerPage({ eventId }: { eventId: string }) {
       try {
         const payload = apiSchemas.commentStreamCommentCreated.parse(JSON.parse((event as MessageEvent).data));
         upsertComment(payload.comment);
-      } catch { /* ignore */ }
+      } catch {
+        // Ignore malformed frames and rely on the next refresh cycle.
+      }
     });
 
     stream.addEventListener(SSE_EVENT_TYPES.COMMENT_DELETED, (event) => {
@@ -83,14 +79,18 @@ export function ViewerPage({ eventId }: { eventId: string }) {
         setComments((cur) =>
           cur.map((c) => (c.commentId === payload.commentId ? { ...c, deletedFlag: true, displayStatus: "HIDDEN" } : c))
         );
-      } catch { /* ignore */ }
+      } catch {
+        // Ignore malformed frames and rely on the next refresh cycle.
+      }
     });
 
     stream.addEventListener(SSE_EVENT_TYPES.ROOM_STATE_UPDATED, (event) => {
       try {
         const payload = apiSchemas.commentStreamRoomStateUpdated.parse(JSON.parse((event as MessageEvent).data));
         setPage((cur) => (cur ? { ...cur, roomState: payload.roomState } : cur));
-      } catch { /* ignore */ }
+      } catch {
+        // Ignore malformed frames and rely on the next refresh cycle.
+      }
     });
 
     stream.addEventListener(SSE_EVENT_TYPES.SYNC_REQUIRED, () => { void refreshComments(); });
@@ -109,16 +109,18 @@ export function ViewerPage({ eventId }: { eventId: string }) {
   );
 
   const roomState: RoomStateDto | null = page?.roomState ?? null;
-  const canPost = roomState?.mode === "OPEN" && !posting;
-  const siteKeyConfigured = Boolean(TURNSTILE_SITE_KEY);
-  const devTokenAvailable = Boolean(TURNSTILE_DEV_TOKEN);
+  const isCommentClosed = roomState?.mode === "CLOSED";
+  const canEditComment = !isCommentClosed && !posting;
+  const canSubmitComment = canEditComment && Boolean(draft.trim());
 
   async function refreshComments() {
     try {
       const next = await fetchComments(eventId, 50);
       setComments(next);
       latestSeenAtRef.current = next.at(-1)?.serverReceivedAt ?? latestSeenAtRef.current;
-    } catch { /* ignore */ }
+    } catch {
+      // Keep the current comment list if refresh fails.
+    }
   }
 
   function upsertComment(next: CommentDto) {
@@ -135,23 +137,20 @@ export function ViewerPage({ eventId }: { eventId: string }) {
   }
 
   async function handleSubmit() {
-    if (!draft.trim()) return;
-    const token = siteKeyConfigured ? turnstileToken : TURNSTILE_DEV_TOKEN;
-    if (!token) return;
+    const trimmed = draft.trim();
+    if (!trimmed || isCommentClosed || posting) return;
     try {
       setPosting(true);
       setSubmitError(null);
       await postComment(eventId, {
-        commentText: draft.trim(),
-        turnstileToken: token,
+        commentText: trimmed,
         clientRequestId: crypto.randomUUID()
       });
       setDraft("");
       setInputOpen(false);
-      setTurnstileResetKey((k) => k + 1);
       await refreshComments();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to post");
+      setSubmitError(formatSubmitError(err));
     } finally {
       setPosting(false);
     }
@@ -177,82 +176,102 @@ export function ViewerPage({ eventId }: { eventId: string }) {
       onClick={() => resetHideTimer()}
       onTouchStart={() => resetHideTimer()}
     >
-      {/* Full-screen video + comment overlay */}
       <div className="viewer-stage">
         <StreamPlayer playbackUid={page?.event.streamPlaybackUid ?? null} title={page?.event.title ?? eventId} />
         <CommentOverlay comments={visibleComments} visible={commentsVisible} />
       </div>
 
-      {/* Floating bottom bar — auto-hides */}
       <div className={`viewer-bar ${controlsVisible ? "is-visible" : ""}`}>
         {inputOpen ? (
-          <div className="input-row">
-            <input
-              type="text"
-              className="comment-input"
-              value={draft}
-              maxLength={COMMENT_MAX_LENGTH}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  void handleSubmit();
-                }
-              }}
-              placeholder="コメントを入力..."
-              disabled={!canPost}
-              autoFocus
-            />
-            <button
-              className="send-btn"
-              disabled={!canPost || !draft.trim() || (!siteKeyConfigured && !devTokenAvailable)}
-              onClick={() => void handleSubmit()}
-            >
-              {posting ? "..." : "送信"}
-            </button>
-            <button className="icon-btn" onClick={() => setInputOpen(false)} aria-label="Close">✕</button>
-          </div>
+          <>
+            <div className="input-row">
+              <input
+                type="text"
+                className="comment-input"
+                value={draft}
+                maxLength={COMMENT_MAX_LENGTH}
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                  if (submitError) setSubmitError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void handleSubmit();
+                  }
+                }}
+                placeholder="コメントを入力..."
+                disabled={!canEditComment}
+                autoFocus
+              />
+              <button
+                className="send-btn"
+                disabled={!canSubmitComment}
+                onClick={() => void handleSubmit()}
+              >
+                {posting ? "..." : "送信"}
+              </button>
+              <button className="icon-btn" onClick={() => setInputOpen(false)} aria-label="閉じる">
+                x
+              </button>
+            </div>
+            {roomState?.mode === "SLOW" ? (
+              <p className="input-hint">連続投稿は少し間隔を空けて送信してください。</p>
+            ) : null}
+          </>
         ) : (
           <div className="controls-row">
             <button
               className="open-input-btn"
-              onClick={() => { setInputOpen(true); resetHideTimer(); }}
-              disabled={roomState?.mode === "CLOSED"}
+              onClick={() => {
+                setInputOpen(true);
+                setSubmitError(null);
+                resetHideTimer();
+              }}
+              disabled={isCommentClosed}
             >
               コメントする...
             </button>
             <button
               className="icon-btn"
               onClick={() => setCommentsVisible((v) => !v)}
-              aria-label={commentsVisible ? "Hide comments" : "Show comments"}
+              aria-label={commentsVisible ? "コメントを非表示" : "コメントを表示"}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 {commentsVisible ? (
-                  <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>
+                  <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></>
                 ) : (
-                  <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" opacity="0.3"/><line x1="3" y1="3" x2="21" y2="21"/></>
+                  <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" opacity="0.3" /><line x1="3" y1="3" x2="21" y2="21" /></>
                 )}
               </svg>
             </button>
-            <button className="icon-btn" onClick={toggleFullscreen} aria-label="Fullscreen">
+            <button className="icon-btn" onClick={toggleFullscreen} aria-label="全画面">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
               </svg>
             </button>
           </div>
         )}
 
-        {/* Turnstile (hidden below input when active) */}
-        {inputOpen && siteKeyConfigured ? (
-          <TurnstileWidget
-            siteKey={TURNSTILE_SITE_KEY}
-            action={TURNSTILE_ACTION}
-            resetKey={turnstileResetKey}
-            onTokenChange={stableOnTokenChange}
-          />
-        ) : null}
         {inputOpen && submitError ? <p className="input-error">{submitError}</p> : null}
       </div>
     </div>
   );
+}
+
+function formatSubmitError(error: unknown) {
+  if (!(error instanceof Error)) return "コメントの送信に失敗しました。";
+
+  switch (error.name) {
+    case "room_closed":
+      return "現在コメント受付は停止中です。";
+    case "slow_mode_active":
+      return "連続投稿を制限しています。少し待ってから送信してください。";
+    case "event_not_found":
+      return "配信イベントが見つかりません。";
+    case "payload_too_large":
+      return "コメントが長すぎます。";
+    default:
+      return error.message || "コメントの送信に失敗しました。";
+  }
 }

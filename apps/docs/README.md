@@ -80,7 +80,7 @@
 
 ### 6.3 管理者
 - Cloudflare 各種設定を管理する
-- Access/WAF/Turnstile 等の運用を行う
+- Access / WAF / Rate Limiting / 必要時のみ Turnstile 等の運用を行う
 - 障害時の切り分け・復旧対応を行う
 
 ---
@@ -106,7 +106,7 @@
 - Cloudflare R2
 - Cloudflare Queues
 - Cloudflare WAF
-- Cloudflare Turnstile
+- Cloudflare Turnstile（必要時のみ。視聴者 UX への影響を許容できる場合に限る）
 - Cloudflare Access
 
 ---
@@ -232,8 +232,10 @@
 
 ### 11.2 負荷攻撃対策
 - コメント投稿APIに WAF / Rate Limiting を適用すること
-- 投稿フォームに Turnstile を適用すること
-- 投稿はサーバ側で検証すること
+- 投稿フォームは視聴者の即時入力を優先し、Cloudflare Turnstile は既定では表示しないこと
+- Turnstile は `PUBLIC_COMMENT_TURNSTILE_REQUIRED=true` の明示設定時のみ使うこと
+- Turnstile を有効化する場合は、フロントエンド UI、CSP、UX 影響をあわせて再確認すること
+- 投稿はサーバ側で本文長、room state、slow mode、moderation を検証すること
 
 ### 11.3 管理画面保護
 - 管理画面は Cloudflare Access 配下とすること
@@ -319,7 +321,7 @@
 ### 14.1 本番前
 - Stream 側のライブ入力を作成・確認する
 - ATEM 側の送出設定を確認する
-- コメントAPI、WAF、Turnstile、Access の設定確認を行う
+- コメントAPI、WAF / Rate Limiting、room state、Access の設定確認を行う
 - テスト視聴とテスト投稿を実施する
 
 ### 14.2 本番中
@@ -340,7 +342,8 @@
 - コメントが他視聴者へ反映されること
 - 管理画面からコメント停止ができること
 - 管理画面からコメント削除ができること
-- Turnstile および rate limiting が有効であること
+- rate limiting とサーバ側投稿制御が有効であること
+- Turnstile は必要時のみ有効化され、通常の視聴者投稿 UX を妨げないこと
 - 管理画面が Access により保護されていること
 - コメントデータが D1 に保存されること
 
@@ -355,7 +358,7 @@
 - コメント表示
 - コメント停止
 - コメント削除
-- WAF / Turnstile / Access
+- WAF / Rate Limiting / Access / 必要時のみ Turnstile
 - D1 保存
 
 ### Should
@@ -388,7 +391,7 @@
 - フロントは Pages に配置する
 - コメントは Workers + Durable Objects で扱う
 - 保存は D1 / R2 に分ける
-- 防御は WAF / Turnstile / Access で行う
+- 防御は WAF / Rate Limiting / サーバ側検証 / Access で行い、Turnstile は必要時のみ追加する
 - WebRTC や録画再配信は採用しない
 
 この方針により、実装量と運用負荷を抑えつつ、本番イベントで必要な機能と安全性を両立する。

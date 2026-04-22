@@ -1,6 +1,6 @@
 import { ViewerPage } from "./routes/viewer-page";
 
-const DEFAULT_EVENT_ID = import.meta.env.VITE_DEFAULT_EVENT_ID?.trim() ?? "";
+const DEFAULT_EVENT_ID = import.meta.env.VITE_DEFAULT_EVENT_ID?.trim() || "concert-2026-04-25";
 
 function resolveEventId(pathname: string) {
   const match = pathname.match(/^\/events\/([^/]+)$/);

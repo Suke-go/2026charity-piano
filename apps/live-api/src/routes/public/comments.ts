@@ -51,27 +51,41 @@ export function registerPublicCommentRoutes(app: Hono<{ Bindings: Env; Variables
     }
     const body = apiSchemas.postCommentRequest.parse(await c.req.json());
 
-    const verification = await verifyTurnstileToken(c.env, body.turnstileToken);
-    if (!verification.success) {
-      const isUnavailable = verification.errorCodes.includes("turnstile_unavailable");
-      return jsonError(
-        c,
-        isUnavailable ? 503 : 400,
-        isUnavailable ? "turnstile_unavailable" : "turnstile_failed",
-        isUnavailable ? "Turnstile verification is unavailable" : "Turnstile verification failed",
-        c.get("requestId")
-      );
+    const turnstileRequired = c.env.PUBLIC_COMMENT_TURNSTILE_REQUIRED === "true";
+    if (turnstileRequired) {
+      if (!body.turnstileToken) {
+        return jsonError(
+          c,
+          400,
+          "turnstile_required",
+          "Turnstile token is required by the current comment policy",
+          c.get("requestId")
+        );
+      }
+
+      const verification = await verifyTurnstileToken(c.env, body.turnstileToken);
+      if (!verification.success) {
+        const isUnavailable = verification.errorCodes.includes("turnstile_unavailable");
+        return jsonError(
+          c,
+          isUnavailable ? 503 : 400,
+          isUnavailable ? "turnstile_unavailable" : "turnstile_failed",
+          isUnavailable ? "Turnstile verification is unavailable" : "Turnstile verification failed",
+          c.get("requestId")
+        );
+      }
     }
 
     const session = ensureSessionId(c.req.header("Cookie"));
     const moderation = evaluateComment(body.commentText, parseBlockedWords(c.env.BLOCKED_COMMENT_WORDS));
     const roomCheck = await canPostInRoom(c.env, eventId, session.sessionId);
     if (!roomCheck.allowed) {
+      const reason = roomCheck.reason ?? "comment_unavailable";
       return jsonError(
         c,
-        429,
-        "room_closed",
-        roomCheck.reason ?? "Comment posting is temporarily unavailable",
+        reason === "slow_mode_active" ? 429 : 403,
+        reason,
+        reason === "room_closed" ? "Comment posting is closed" : "Comment posting is temporarily unavailable",
         c.get("requestId")
       );
     }
