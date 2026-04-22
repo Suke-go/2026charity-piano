@@ -1,7 +1,8 @@
 import { apiSchemas, COMMENT_MAX_LENGTH, type CommentDto, type PostCommentResponse, type PublicEventResponse } from "@charity/shared";
 import { z } from "zod";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "https://charity-api.kosuke05816.workers.dev").replace(/\/$/, "");
+const CONFIGURED_API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim() ?? "";
+const API_BASE_URL = resolveApiBaseUrl();
 
 const commentsResponseSchema = z.object({
   comments: z.array(apiSchemas.comment)
@@ -76,6 +77,13 @@ async function requestJson(path: string, init?: RequestInit) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function resolveApiBaseUrl() {
+  if (typeof window !== "undefined" && window.location.hostname === "live.letsplayforpeace.com") {
+    return "";
+  }
+  return (CONFIGURED_API_BASE_URL || "https://charity-api.kosuke05816.workers.dev").replace(/\/$/, "");
 }
 
 async function readError(response: Response) {

@@ -10,7 +10,7 @@ Responsibilities:
 - keep public comment entry free of visitor-facing Cloudflare challenges by default
 
 Main env vars:
-- `VITE_API_BASE_URL`
+- `VITE_API_BASE_URL` (leave empty for `live.letsplayforpeace.com`; the viewer uses same-origin `/api`)
 - `VITE_DEFAULT_EVENT_ID`
 
 Pages example:

@@ -2,6 +2,9 @@ name = "charity-api"
 main = "src/index.ts"
 compatibility_date = "2026-04-03"
 workers_dev = true
+routes = [
+  { pattern = "live.letsplayforpeace.com/api/*", zone_name = "letsplayforpeace.com" }
+]
 
 # --- Default deployment / local development ---
 # This top-level environment is what `wrangler deploy` uses for the workers.dev API.

@@ -144,8 +144,7 @@ export class CommentRoom {
     return new Response(readable, {
       headers: {
         "content-type": "text/event-stream; charset=utf-8",
-        "cache-control": "no-cache, no-transform",
-        connection: "keep-alive"
+        "cache-control": "no-cache, no-transform"
       }
     });
   }

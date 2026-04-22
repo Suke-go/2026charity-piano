@@ -13,10 +13,7 @@ export function registerPublicStreamRoutes(app: Hono<{ Bindings: Env; Variables:
     if (!event) {
       return jsonError(c, 404, "event_not_found", "Event not found", c.get("requestId"));
     }
-    const url = new URL(c.req.raw.url);
-    url.searchParams.set("eventId", eventId);
-    const request = new Request(url.toString(), c.req.raw);
-    return getRoomStub(c.env, eventId).fetch(request);
+    return getRoomStub(c.env, eventId).fetch(buildRoomStreamRequest(c.req.raw, eventId));
   });
 
   app.get("/api/events/:eventId/stream", async (c) => {
@@ -27,9 +24,13 @@ export function registerPublicStreamRoutes(app: Hono<{ Bindings: Env; Variables:
     if (!event) {
       return jsonError(c, 404, "event_not_found", "Event not found", c.get("requestId"));
     }
-    const url = new URL(c.req.raw.url);
-    url.searchParams.set("eventId", eventId);
-    const request = new Request(url.toString(), c.req.raw);
-    return getRoomStub(c.env, eventId).fetch(request);
+    return getRoomStub(c.env, eventId).fetch(buildRoomStreamRequest(c.req.raw, eventId));
   });
+}
+
+function buildRoomStreamRequest(rawRequest: Request, eventId: string) {
+  const url = new URL(rawRequest.url);
+  url.pathname = "/stream";
+  url.searchParams.set("eventId", eventId);
+  return new Request(url.toString(), rawRequest);
 }
