@@ -3,13 +3,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
+import { getPromptCatalog, getSubmissionPolicy } from "./config.js";
 import type {
   CollectionMode,
   CollectionStateRecord,
+  DisplayMode,
   EventRecord,
   LocalEventState,
   PromptRecord,
   PublicBootstrapResponse,
+  PublicFeedItem,
   SubmissionRecord
 } from "./models.js";
 
@@ -29,6 +32,7 @@ interface PromptRow {
 interface CollectionStateRow {
   active_prompt_id: string;
   mode: CollectionMode;
+  display_mode: DisplayMode;
   updated_at: string;
 }
 
@@ -78,6 +82,7 @@ db.exec(`
     event_id TEXT PRIMARY KEY,
     active_prompt_id TEXT NOT NULL,
     mode TEXT NOT NULL,
+    display_mode TEXT NOT NULL DEFAULT 'INPUT',
     updated_at TEXT NOT NULL,
     FOREIGN KEY (event_id) REFERENCES events(event_id) ON DELETE CASCADE,
     FOREIGN KEY (active_prompt_id) REFERENCES prompts(prompt_id) ON DELETE CASCADE
@@ -106,6 +111,13 @@ db.exec(`
     ON submissions(event_id, created_at DESC);
 `);
 
+const existingCollectionColumns = db
+  .prepare<[], { name: string }>("PRAGMA table_info(collection_state)")
+  .all();
+if (!existingCollectionColumns.some((column) => column.name === "display_mode")) {
+  db.exec("ALTER TABLE collection_state ADD COLUMN display_mode TEXT NOT NULL DEFAULT 'INPUT'");
+}
+
 const selectEventStatement = db.prepare<[string], EventRow>(
   "SELECT event_id, title, status FROM events WHERE event_id = ?"
 );
@@ -113,7 +125,7 @@ const selectPromptsStatement = db.prepare<[string], PromptRow>(
   "SELECT prompt_id, title, description, created_at FROM prompts WHERE event_id = ? ORDER BY created_at DESC"
 );
 const selectCollectionStateStatement = db.prepare<[string], CollectionStateRow>(
-  "SELECT active_prompt_id, mode, updated_at FROM collection_state WHERE event_id = ?"
+  "SELECT active_prompt_id, mode, display_mode, updated_at FROM collection_state WHERE event_id = ?"
 );
 const selectPromptByIdStatement = db.prepare<[string], PromptRow>(
   "SELECT prompt_id, title, description, created_at FROM prompts WHERE prompt_id = ?"
@@ -156,11 +168,14 @@ const insertPromptStatement = db.prepare(
    VALUES (@prompt_id, @event_id, @title, @description, @created_at)`
 );
 const insertCollectionStateStatement = db.prepare(
-  `INSERT INTO collection_state (event_id, active_prompt_id, mode, updated_at)
-   VALUES (@event_id, @active_prompt_id, @mode, @updated_at)`
+  `INSERT INTO collection_state (event_id, active_prompt_id, mode, display_mode, updated_at)
+   VALUES (@event_id, @active_prompt_id, @mode, @display_mode, @updated_at)`
 );
 const updateCollectionModeStatement = db.prepare(
   "UPDATE collection_state SET mode = @mode, updated_at = @updated_at WHERE event_id = @event_id"
+);
+const updateDisplayModeStatement = db.prepare(
+  "UPDATE collection_state SET display_mode = @display_mode, updated_at = @updated_at WHERE event_id = @event_id"
 );
 const updateActivePromptStatement = db.prepare(
   `UPDATE collection_state
@@ -205,6 +220,7 @@ const hideSubmissionStatement = db.prepare<[string]>(
 const initializeEventStatement = db.transaction((eventId: string) => {
   const now = new Date().toISOString();
   const promptId = randomUUID();
+  const defaultTemplate = getPromptCatalog()[0];
   insertEventStatement.run({
     event_id: eventId,
     title: humanizeEventId(eventId),
@@ -213,14 +229,15 @@ const initializeEventStatement = db.transaction((eventId: string) => {
   insertPromptStatement.run({
     prompt_id: promptId,
     event_id: eventId,
-    title: "Today's prompt",
-    description: "Please share your feedback.",
+    title: defaultTemplate?.title ?? "Today's prompt",
+    description: defaultTemplate?.description ?? "Please share your feedback.",
     created_at: now
   });
   insertCollectionStateStatement.run({
     event_id: eventId,
     active_prompt_id: promptId,
     mode: "OPEN",
+    display_mode: "INPUT",
     updated_at: now
   });
 });
@@ -261,7 +278,10 @@ export function getPublicBootstrap(eventId: string): PublicBootstrapResponse {
   return {
     event: state.event,
     activePrompt,
-    collectionState: state.collectionState
+    collectionState: state.collectionState,
+    submissionPolicy: {
+      maxLength: getSubmissionPolicy().maxLength
+    }
   };
 }
 
@@ -309,6 +329,33 @@ export function setCollectionMode(eventId: string, mode: CollectionMode): Collec
     throw new Error(`Collection state not found for event ${eventId}`);
   }
   return mapCollectionState(row);
+}
+
+export function setDisplayMode(eventId: string, displayMode: DisplayMode): CollectionStateRecord {
+  ensureEvent(eventId);
+  const updatedAt = new Date().toISOString();
+  updateDisplayModeStatement.run({
+    event_id: eventId,
+    display_mode: displayMode,
+    updated_at: updatedAt
+  });
+  const row = selectCollectionStateStatement.get(eventId);
+  if (!row) {
+    throw new Error(`Collection state not found for event ${eventId}`);
+  }
+  return mapCollectionState(row);
+}
+
+export function listPublicFeed(eventId: string, limit = 80): PublicFeedItem[] {
+  ensureEvent(eventId);
+  return listVisibleSubmissionsStatement
+    .all(eventId)
+    .slice(0, limit)
+    .map((row) => ({
+      submissionId: row.submission_id,
+      answerText: row.answer_text,
+      createdAt: row.created_at
+    }));
 }
 
 export function createPrompt(eventId: string, input: { title: string; description: string }) {
@@ -446,6 +493,7 @@ function mapPrompt(row: PromptRow): PromptRecord {
 function mapCollectionState(row: CollectionStateRow): CollectionStateRecord {
   return {
     mode: row.mode,
+    displayMode: row.display_mode ?? "INPUT",
     updatedAt: row.updated_at
   };
 }

@@ -2,6 +2,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const DEV_ACCESS_TOKEN = import.meta.env.VITE_DEV_ACCESS_TOKEN ?? "dev-admin";
 
 export type CollectionMode = "OPEN" | "PAUSED" | "CLOSED";
+export type DisplayMode = "INPUT" | "ANSWERS";
 
 export interface LocalEventDto {
   eventId: string;
@@ -18,7 +19,20 @@ export interface PromptDto {
 
 export interface CollectionStateDto {
   mode: CollectionMode;
+  displayMode: DisplayMode;
   updatedAt: string;
+}
+
+export interface FeedItemDto {
+  submissionId: string;
+  answerText: string;
+  createdAt: string;
+}
+
+export interface FeedResponse {
+  eventId: string;
+  items: FeedItemDto[];
+  generatedAt: string;
 }
 
 export interface SubmissionDto {
@@ -32,10 +46,15 @@ export interface SubmissionDto {
   deletedFlag: boolean;
 }
 
+export interface SubmissionPolicyDto {
+  maxLength: number;
+}
+
 export interface AudienceBootstrapResponse {
   event: LocalEventDto;
   activePrompt: PromptDto | null;
   collectionState: CollectionStateDto;
+  submissionPolicy: SubmissionPolicyDto;
 }
 
 export interface AdminBootstrapResponse {
@@ -90,13 +109,36 @@ export async function fetchAudienceBootstrap(eventId: string) {
   return requestJson<AudienceBootstrapResponse>(`/api/events/${eventId}/bootstrap`);
 }
 
+export function buildAudienceStreamUrl(eventId: string) {
+  return `${API_BASE_URL}/api/events/${eventId}/live-updates`;
+}
+
+export async function fetchFeed(eventId: string, limit = 80) {
+  return requestJson<FeedResponse>(`/api/events/${eventId}/feed?limit=${limit}`);
+}
+
+function generateClientRequestId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
+    bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+  }
+  return `req-${Date.now()}-${Math.floor(Math.random() * 1e9).toString(16)}`;
+}
+
 export async function submitAnswer(eventId: string, promptId: string, answerText: string) {
   return requestJson<{ submission: SubmissionDto; duplicated: boolean }>(`/api/events/${eventId}/submissions`, {
     method: "POST",
     body: JSON.stringify({
       promptId,
       answerText,
-      clientRequestId: crypto.randomUUID()
+      clientRequestId: generateClientRequestId()
     })
   });
 }

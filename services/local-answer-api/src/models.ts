@@ -1,4 +1,5 @@
 export type CollectionMode = "OPEN" | "PAUSED" | "CLOSED";
+export type DisplayMode = "INPUT" | "ANSWERS";
 
 export interface EventRecord {
   eventId: string;
@@ -15,6 +16,7 @@ export interface PromptRecord {
 
 export interface CollectionStateRecord {
   mode: CollectionMode;
+  displayMode: DisplayMode;
   updatedAt: string;
 }
 
@@ -29,6 +31,10 @@ export interface SubmissionRecord {
   deletedFlag: boolean;
 }
 
+export interface SubmissionPolicy {
+  maxLength: number;
+}
+
 export interface LocalEventState {
   event: EventRecord;
   prompts: PromptRecord[];
@@ -41,4 +47,11 @@ export interface PublicBootstrapResponse {
   event: EventRecord;
   activePrompt: PromptRecord | null;
   collectionState: CollectionStateRecord;
+  submissionPolicy: SubmissionPolicy;
+}
+
+export interface PublicFeedItem {
+  submissionId: string;
+  answerText: string;
+  createdAt: string;
 }

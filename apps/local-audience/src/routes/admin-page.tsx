@@ -11,6 +11,12 @@ import {
   type SubmissionDto
 } from "../lib/api-client";
 
+const DEFAULT_EVENT_ID = import.meta.env.VITE_DEFAULT_EVENT_ID ?? "local-feedback";
+
+function buildAudiencePath(eventId: string) {
+  return eventId === DEFAULT_EVENT_ID ? "/" : `/events/${eventId}`;
+}
+
 export function AdminPage({ eventId }: { eventId: string }) {
   const [page, setPage] = useState<AdminBootstrapResponse | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
@@ -163,7 +169,7 @@ export function AdminPage({ eventId }: { eventId: string }) {
           >
             {exporting ? "Exporting..." : "Export JSON"}
           </button>
-          <a className="button-link secondary" href={`/events/${eventId}`}>Open audience page</a>
+          <a className="button-link secondary" href={buildAudiencePath(eventId)}>Open audience page</a>
         </div>
       </section>
 

@@ -1,0 +1,23 @@
+{
+  "submissionPolicy": {
+    "maxLength": 80,
+    "blockedTerms": []
+  },
+  "promptCatalog": [
+    {
+      "key": "opening-reflection",
+      "title": "いま、舞台に贈りたい気持ちは？",
+      "description": "短い一行で、そのまま読み上げられる言葉を。"
+    },
+    {
+      "key": "concert-memory",
+      "title": "今日、心に残しておきたい一瞬は？",
+      "description": "場面でも、音でも、言葉でも、ひとつだけ。"
+    },
+    {
+      "key": "peace-message",
+      "title": "ここに残したい、平和への一言は？",
+      "description": "短く、素直に、会場に馴染む言葉で。"
+    }
+  ]
+}

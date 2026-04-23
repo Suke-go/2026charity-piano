@@ -16,6 +16,7 @@ server {
   }
 
   location / {
+    # SPA fallback for `/`, `/events/:eventId`, and same-host admin fallback routes.
     try_files $uri /index.html;
   }
 }

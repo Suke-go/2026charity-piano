@@ -274,3 +274,389 @@ button.secondary {
     gap: 12px;
   }
 }
+
+.audience-phone {
+  min-height: 100dvh;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at top, rgba(223, 213, 184, 0.1), transparent 24%),
+    radial-gradient(circle at 20% 20%, rgba(202, 182, 141, 0.08), transparent 30%),
+    linear-gradient(180deg, #050505 0%, #0c0c0a 38%, #151411 100%);
+}
+
+.audience-frame {
+  position: relative;
+  isolation: isolate;
+  width: min(100vw, 430px);
+  min-height: 100dvh;
+  max-height: 100dvh;
+  padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 16px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 230, 0.02), rgba(255, 248, 230, 0)),
+    linear-gradient(180deg, rgba(15, 15, 12, 0.98) 0%, rgba(11, 11, 9, 0.97) 100%);
+  border: 1px solid rgba(207, 196, 166, 0.16);
+  color: #ece3cf;
+  font-family: "Baskerville Old Face", "Yu Mincho", Georgia, serif;
+}
+
+.audience-frame::before,
+.audience-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.audience-frame::before {
+  z-index: -2;
+  background:
+    linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), rgba(214, 203, 172, 0.05) calc(100% - 1px)),
+    linear-gradient(180deg, transparent 0, transparent calc(100% - 1px), rgba(214, 203, 172, 0.04) calc(100% - 1px));
+  background-size: 100% 100%, 100% 32px;
+  opacity: 0.65;
+}
+
+.audience-frame::after {
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 10%, transparent 90%, rgba(0, 0, 0, 0.25)),
+    radial-gradient(circle at center, transparent 52%, rgba(0, 0, 0, 0.35) 100%);
+}
+
+.audience-header,
+.audience-question,
+.audience-composer,
+.audience-footer {
+  border-radius: 22px;
+  backdrop-filter: blur(14px);
+  background:
+    linear-gradient(180deg, rgba(246, 237, 214, 0.035), rgba(246, 237, 214, 0)),
+    rgba(16, 16, 14, 0.86);
+  border: 1px solid rgba(214, 203, 172, 0.14);
+  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.34);
+}
+
+.audience-header,
+.audience-question,
+.audience-composer {
+  padding: 16px;
+}
+
+.audience-header {
+  display: grid;
+  gap: 8px;
+}
+
+.audience-header h1,
+.audience-question h2,
+.audience-footnote {
+  margin: 0;
+}
+
+.audience-kicker,
+.audience-section-label,
+.audience-caption,
+.audience-code {
+  margin: 0;
+}
+
+.audience-kicker,
+.audience-section-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(219, 208, 178, 0.72);
+  font-family: "Cascadia Mono", "IBM Plex Mono", "Segoe UI Mono", monospace;
+}
+
+.audience-topline,
+.audience-question-head,
+.audience-statusline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.audience-code {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(211, 200, 171, 0.58);
+  font-family: "Cascadia Mono", "IBM Plex Mono", "Segoe UI Mono", monospace;
+}
+
+.audience-header-row {
+  display: grid;
+  gap: 12px;
+}
+
+.audience-header h1 {
+  font-size: clamp(15px, 4vw, 19px);
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.audience-statusline {
+  justify-content: flex-start;
+}
+
+.audience-signal {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #e5dac1;
+  box-shadow: 0 0 0 4px rgba(229, 218, 193, 0.08);
+}
+
+.audience-signal.is-busy {
+  animation: audience-pulse 0.8s steps(2, end) infinite;
+}
+
+.audience-question {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.audience-question::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 22%);
+  pointer-events: none;
+}
+
+.audience-question h2 {
+  font-size: clamp(17px, 4.8vw, 22px);
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.audience-scramble {
+  min-height: 1.4em;
+  text-wrap: balance;
+}
+
+.audience-scramble.is-animating,
+.audience-description.is-animating {
+  animation: audience-flicker 0.18s linear infinite alternate;
+}
+
+.audience-description {
+  margin: 0;
+  color: rgba(236, 227, 207, 0.78);
+  font-size: 13px;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.audience-composer {
+  display: grid;
+  gap: 12px;
+}
+
+.audience-composer textarea {
+  width: 100%;
+  border: 1px solid rgba(217, 205, 174, 0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #efe6d3;
+  background:
+    linear-gradient(180deg, rgba(248, 239, 216, 0.04), rgba(248, 239, 216, 0.01)),
+    rgba(255, 255, 255, 0.03);
+  min-height: 88px;
+  max-height: 88px;
+  resize: none;
+  font-family: "Yu Gothic", "Hiragino Sans", sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+.audience-composer textarea::placeholder {
+  color: rgba(239, 230, 211, 0.34);
+}
+
+.audience-composer textarea:focus {
+  outline: 1px solid rgba(225, 215, 188, 0.4);
+  outline-offset: 0;
+}
+
+.audience-composer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.audience-caption {
+  color: rgba(236, 227, 207, 0.56);
+  font-size: 12px;
+  font-family: "Cascadia Mono", "IBM Plex Mono", "Segoe UI Mono", monospace;
+}
+
+.audience-footer {
+  padding: 12px 14px;
+  min-height: 72px;
+  display: grid;
+  gap: 6px;
+  align-content: center;
+}
+
+.audience-footnote {
+  color: rgba(236, 227, 207, 0.54);
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: "Cascadia Mono", "IBM Plex Mono", "Segoe UI Mono", monospace;
+}
+
+.audience-frame button,
+.audience-frame .button-link {
+  border-radius: 6px;
+  border: 1px solid rgba(224, 213, 187, 0.26);
+  background:
+    linear-gradient(180deg, #e3d7bb 0%, #cabb94 100%);
+  color: #15130f;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-family: "Cascadia Mono", "IBM Plex Mono", "Segoe UI Mono", monospace;
+  box-shadow: inset 0 0 0 1px rgba(255, 251, 242, 0.18);
+}
+
+.audience-frame .state-chip {
+  min-width: 108px;
+  justify-self: start;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #efe6d3;
+  border: 1px solid rgba(214, 203, 172, 0.18);
+  font-family: "Cascadia Mono", "IBM Plex Mono", "Segoe UI Mono", monospace;
+  letter-spacing: 0.08em;
+}
+
+.audience-frame .state-open {
+  background: rgba(213, 202, 175, 0.14);
+  color: #f1e4c6;
+}
+
+.audience-frame .state-paused {
+  background: rgba(119, 108, 84, 0.28);
+  color: #e7d6aa;
+}
+
+.audience-frame .state-closed {
+  background: rgba(88, 60, 52, 0.34);
+  color: #efc7be;
+}
+
+@keyframes audience-flicker {
+  from {
+    opacity: 0.86;
+    text-shadow: 0 0 0 rgba(229, 218, 193, 0);
+  }
+
+  to {
+    opacity: 1;
+    text-shadow: 0 0 12px rgba(229, 218, 193, 0.08);
+  }
+}
+
+@keyframes audience-pulse {
+  from {
+    opacity: 0.35;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 641px) {
+  .audience-phone {
+    padding: 18px;
+  }
+
+  .audience-frame {
+    min-height: min(880px, calc(100dvh - 36px));
+    max-height: min(880px, calc(100dvh - 36px));
+    border-radius: 32px;
+  }
+}
+
+/* ========== ANSWERS mode (floating feed) ========== */
+
+.audience-frame.audience-feed {
+  padding: 0;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(223, 213, 184, 0.08), transparent 40%),
+    linear-gradient(180deg, #050505 0%, #0c0c0a 60%, #151411 100%);
+}
+
+.comment-overlay {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.floating-comment {
+  position: absolute;
+  top: 0;
+  left: var(--comment-x);
+  width: var(--comment-width);
+  padding: 2px 10px;
+  color: rgba(244, 233, 208, 0.98);
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", "Baskerville Old Face", Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.85),
+    0 2px 4px rgba(0, 0, 0, 0.9),
+    0 0 22px rgba(230, 215, 170, 0.12);
+  will-change: transform, opacity;
+  transform: translate3d(0, var(--comment-start-y), 0) scale(0.96);
+  animation: audience-float var(--comment-duration) cubic-bezier(0.16, 0.82, 0.24, 1) var(--comment-delay) forwards;
+}
+
+@keyframes audience-float {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, calc(var(--comment-start-y) + 14px), 0) scale(0.92);
+  }
+  10% {
+    opacity: 1;
+    transform: translate3d(0, var(--comment-start-y), 0) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate3d(var(--comment-drift-x), var(--comment-end-y), 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--comment-drift-x), calc(var(--comment-end-y) - 22px), 0) scale(0.96);
+  }
+}

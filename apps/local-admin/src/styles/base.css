@@ -17,7 +17,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -83,12 +84,14 @@ small {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   min-height: 40px;
   padding: 12px;
   border-radius: 12px;
   border: 1px solid rgba(24, 32, 40, 0.12);
+  background: #fff;
 }
 
 textarea {
@@ -98,6 +101,15 @@ textarea {
 .form {
   display: grid;
   gap: 12px;
+}
+
+.grid {
+  display: grid;
+  gap: 18px;
+}
+
+.two-up {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .button-row {
@@ -178,6 +190,31 @@ button.secondary,
   gap: 12px;
 }
 
+.catalog-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.catalog-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fbfbf8;
+  border: 1px solid rgba(24, 32, 40, 0.08);
+}
+
+.catalog-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.catalog-copy p,
+.catalog-copy small {
+  margin: 0;
+}
+
 .comment-row {
   display: flex;
   justify-content: space-between;
@@ -201,6 +238,31 @@ button.secondary,
   margin: 8px 0;
 }
 
+.export-controls {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 16px;
+}
+
+.export-field {
+  align-content: start;
+}
+
+.checkbox-field {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 40px;
+  padding-top: 26px;
+}
+
+.checkbox-field input {
+  width: auto;
+  min-height: auto;
+  padding: 0;
+}
+
 .error {
   color: #b00020;
 }
@@ -214,5 +276,104 @@ button.secondary,
   .comment-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* ========== QR ========== */
+
+.qr-inline {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(24, 32, 40, 0.08);
+}
+
+.qr-inline-url {
+  margin: 0;
+  font-family: "Cascadia Mono", "Consolas", "Menlo", monospace;
+  font-size: 13px;
+  color: #4f5e68;
+  word-break: break-all;
+  text-align: center;
+}
+
+.qr-fullscreen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #0f0e0b;
+}
+
+.qr-fullscreen-card {
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 24px;
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.4);
+}
+
+.qr-fullscreen-url {
+  margin: 0;
+  font-family: "Cascadia Mono", "Consolas", "Menlo", monospace;
+  font-size: 15px;
+  color: #232933;
+  word-break: break-all;
+  text-align: center;
+}
+
+.qr-fullscreen-hint {
+  margin: 0;
+  font-size: 14px;
+  color: #5f6c77;
+  letter-spacing: 0.06em;
+}
+
+.qr-combo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  max-width: 1100px;
+  width: 100%;
+  padding: 24px;
+}
+
+.qr-combo-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 32px 24px;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.qr-combo-step {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1d5c5b;
+  letter-spacing: 0.08em;
+}
+
+.qr-combo-label {
+  margin: 0;
+  font-family: "Cascadia Mono", "Consolas", "Menlo", monospace;
+  font-size: 14px;
+  color: #232933;
+  word-break: break-all;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .qr-combo {
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
 }
